@@ -1,13 +1,12 @@
 ---
-
 version: 2
- jobs:
-    pr_check:
-      docker:
-        - image: circleci/node:10.16.3 
-      steps:
-       - checkout
-       - run: 
+jobs:
+  pr_check:
+    docker:
+      - image: circleci/node:10.16.3 
+    steps:
+      - checkout
+      - run: 
           name: Test
           command: |
             echo "Hello"

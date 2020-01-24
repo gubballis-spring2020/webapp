@@ -1,0 +1,19 @@
+version: 2
+ jobs:
+    pr_check:
+      docker:
+        - image: circleci/node:10.16.3 
+      steps:
+       - checkout
+       - run: 
+          name: Test
+          command: |
+            echo "Hello"
+
+workflows:
+  version 2:
+  pr_check_workflow:
+    jobs:
+    - pr_check 
+
+      

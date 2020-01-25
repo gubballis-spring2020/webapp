@@ -7,3 +7,4 @@ const User = function(user) {
     this.last_name = user.last_name;
     this.password = user.password;
   };
+

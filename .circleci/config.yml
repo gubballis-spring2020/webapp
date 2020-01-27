@@ -36,12 +36,12 @@ jobs:
   pr_check:
     docker:
       - image: circleci/node:8.10.0
-      - image: circleci/mysql:8.0.4
+      - image: circleci/mysql:5.7
         environment:
-          MYSQL_ROOT_PASSWORD: rootpw
-          MYSQL_DATABASE: test_db
-          MYSQL_USER: user
-          MYSQL_PASSWORD: passw0rd
+          MYSQL_ROOT_PASSWORD: parasites
+          MYSQL_DATABASE: CSYE6225
+          # MYSQL_USER: user
+          # MYSQL_PASSWORD: passw0rd
 
     steps:
       - checkout
@@ -75,6 +75,11 @@ jobs:
           name: Install MySQL CLI; Import dummy data; run an example query
           command: |
             npm install mysql
+
+      - run:
+          name: Change the password
+          command: |
+            mysql -h 127.0.0.1 -u user -pparasites CSYE6225 < sql/dummy.sql
       
       - run:
           name: Tests run
@@ -100,4 +105,8 @@ workflows:
       - pr_check
   build-deploy-workflow:
     jobs:
-      - build
+      - build:
+          filters:
+            branches:
+              only:
+                - master

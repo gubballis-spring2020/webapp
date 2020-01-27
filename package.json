@@ -4,8 +4,7 @@
   "description": "Assignment-1 for cloud",
   "main": "server.js",
   "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "test": "jest --forceExit"
   },
   "author": "Srikanth Reddy",
   "license": "ISC",

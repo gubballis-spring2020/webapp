@@ -6,14 +6,14 @@ const request = supertest(app)
 describe('Post Endpoints', () => {
   it('should create a new user', async () => {
     const res = await supertest(app)
-      .post('/user')
+      .post('/v1/user')
       .send({
         first_name: "Jane",
         last_name: "Doe",
         password: "Cloud007",
         email_address: "jane.doe@example.com"
       })
-    expect(res.statusCode).toEqual(400)
+    expect(res.statusCode).toEqual(201)
     // expect(res.body).toHaveProperty('post')
   })
 });
@@ -21,7 +21,7 @@ describe('Post Endpoints', () => {
 describe('Post Endpoints', () => {
   it('should throw an error when create a new user', async () => {
     const res = await supertest(app)
-      .post('/user')
+      .post('/v1/user')
       .send({
         first_name: "Jane",
         last_name: "Doe",

@@ -104,4 +104,4 @@ dist
 .tern-port
 
 # MYSQL config
-config/db.config.js
+# config/db.config.js

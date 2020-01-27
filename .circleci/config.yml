@@ -1,15 +1,86 @@
 ---
+# version: 2
+# jobs:
+#   pr_check:
+#     docker:
+#       - image: circleci/node:8.10.0
+#     steps:
+#       - checkout
+#       - run:
+#           name: Running tests
+#           command: |
+#             echo "Hello World"
+#   build:
+#     docker:
+#       - image: circleci/node:8.10.0
+#     steps:
+#       - checkout
+#       - run:
+#           name: Running builds
+#           command: |
+#             echo "Hello World"
+
+
+# workflows:
+#   version: 2
+#   pr-check-workflow:
+#     jobs:
+#       - pr_check
+#   build-deploy-workflow:
+#     jobs:
+#       - build
+
+
 version: 2
 jobs:
   pr_check:
     docker:
       - image: circleci/node:8.10.0
+      - image: circleci/mysql:8.0.4
+        environment:
+          MYSQL_ROOT_PASSWORD: rootpw
+          MYSQL_DATABASE: test_db
+          MYSQL_USER: user
+          MYSQL_PASSWORD: passw0rd
+
     steps:
       - checkout
+      # - run: sudo apt-get install mysql-client
+      # - restore_cache:
+      #     keys:
+      #       - node-v1-{{ checksum "package.json" }}
+      #       - node-v1-
+      - run: npm install
+      # - save_cache:
+      #     key: node-v1-{{ checksum "package.json" }}
+      #     paths:
+      #       - node_modules
+
+      # prepare the database
+      # - run: mysqladmin create test --host="127.0.0.1" --user="root" --password="root"
+
       - run:
-          name: Running tests
+      # Our primary container isn't MYSQL so run a sleep command until it's ready.
+          name: Waiting for MySQL to be ready
           command: |
-            echo "Hello World"
+            for i in `seq 1 10`;
+            do
+              nc -z 127.0.0.1 3306 && echo Success && exit 0
+              echo -n .
+              sleep 1
+            done
+            echo Failed waiting for MySQL && exit 1
+
+      - run:
+          name: Install MySQL CLI; Import dummy data; run an example query
+          command: |
+            npm install mysql
+      
+      - run:
+          name: Tests run
+          command: |
+            npm test
+
   build:
     docker:
       - image: circleci/node:8.10.0
@@ -19,6 +90,7 @@ jobs:
           name: Running builds
           command: |
             echo "Hello World"
+            
 
 
 workflows:
@@ -29,14 +101,3 @@ workflows:
   build-deploy-workflow:
     jobs:
       - build
-
-
-
-# version: 2.1
-# jobs:
-#   build:
-#     docker: 
-#       - image: circleci/node:8.10.0 # the primary container, where your job's commands are run
-#     steps:
-#       - checkout # check out the code in the project directory
-#       - run: echo "hello world"

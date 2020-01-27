@@ -13,7 +13,10 @@ router.get('/:id', BillController.get_bills);
 router.post('/', BillController.post_bills);
 
 // Update bill details
-router.put('/', BillController.update_bills);
+router.put('/:id', BillController.update_bill);
+
+// Delete bill details
+router.delete('/:id', BillController.delete_bill);
 
 
 module.exports = router;

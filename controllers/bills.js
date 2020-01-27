@@ -19,7 +19,7 @@ exports.post_bills = async (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
-        return res.status(400).send({ error: true, message: 'Please provide email address or password' });
+        return res.status(401).send({ error: true, message: 'Please provide email address or password' });
     }
 
     mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, results) {
@@ -67,7 +67,7 @@ exports.get_bills = (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
-        return res.status(400).send({ error: true, message: 'Please provide email address or pssword' });
+        return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
     mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, results) {
@@ -120,7 +120,7 @@ exports.update_bill = (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
-        return res.status(400).send({ error: true, message: 'Please provide email address or pssword' });
+        return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
     mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, results) {
@@ -177,7 +177,7 @@ exports.delete_bill = (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
-        return res.status(400).send({ error: true, message: 'Please provide email address or pssword' });
+        return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
     mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, results) {

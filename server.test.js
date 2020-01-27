@@ -13,10 +13,10 @@ describe('Post Endpoints', () => {
         password: "Cloud007",
         email_address: "jane.doe@example.com"
       })
-    expect(res.statusCode).toEqual(201)
+    expect(res.statusCode).toEqual(400)
     // expect(res.body).toHaveProperty('post')
   })
-})
+});
 
 describe('Post Endpoints', () => {
   it('should throw an error when create a new user', async () => {
@@ -31,4 +31,4 @@ describe('Post Endpoints', () => {
     expect(res.statusCode).toEqual(400)
     // expect(res.body).toHaveProperty('post')
   })
-})
+});

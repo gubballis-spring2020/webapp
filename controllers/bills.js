@@ -22,6 +22,10 @@ exports.post_bills = async (req, res) => {
         return res.status(401).send({ error: true, message: 'Please provide email address or password' });
     }
 
+    if(!bill.vendor || !bill.bill_date || !bill.due_date || !bill.amount_due || !bill.paymentStatus){
+        return res.status(400).send({ error: true, message: 'One or more fields are not provided to create' });
+    }
+
     mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, results) {
         if (err) {
             //console.log(err);
@@ -91,6 +95,22 @@ exports.get_bills = (req, res) => {
                         res.status(404).send({ message: "Bill not found" });
 
                 })
+
+                // Update it later once confirmed
+                // mysqlConnection.query("select * from bills where id = ?", req.params.id ,(err, results) => {
+
+                //     if(results.length>0){
+                //         mysqlConnection.query("select * from bills where owner_id = ? and id = ?", [owner_id, req.params.id], (err, results) => {
+                //             if (results.length > 0)
+                //                 res.send(results);
+                //             else
+                //                 res.status(401).send({ message: "Not authorized to see bill" });
+        
+                //         })
+                //     }
+                //     else
+                //         res.status(404).send({ message: "Bill not found" });
+                // })
             }
         }
     });
@@ -123,6 +143,10 @@ exports.update_bill = (req, res) => {
         return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
+    if(!bill.vendor || !bill.bill_date || !bill.due_date || !bill.amount_due || !bill.paymentStatus){
+        return res.status(400).send({ error: true, message: 'One or more fields are not provided for update' });
+    }
+
     mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, results) {
         if (err) {
             //console.log(err);
@@ -139,20 +163,19 @@ exports.update_bill = (req, res) => {
                 const owner_id = results[0].id;
                 mysqlConnection.query("select * from bills where id = ?", req.params.id ,(err, results) => {
                     if(results.length > 0){
-                        mysqlConnection.query("Update bills set updated_ts = ?, vendor = ?, bill_date = ?, due_date = ?, amount_due = ?, paymentStatus = ? where id = ?", [new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0], bill.vendor, bill.bill_date, bill.due_date, bill.amount_due, bill.paymentStatus, req.params.id], (err, rows, fields) => {
-                            if (!err) {
-                                mysqlConnection.query("select * from bills where id = ?",req.params.id, (err, rows, fields) => {
-                                    if (!err)
-                                        res.status(200).send({ rows });
+                        mysqlConnection.query("Update bills set updated_ts = ?, vendor = ?, bill_date = ?, due_date = ?, amount_due = ?, paymentStatus = ? where id = ? and owner_id = ?", [new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0], bill.vendor, bill.bill_date, bill.due_date, bill.amount_due, bill.paymentStatus, req.params.id, owner_id], (err, rows, fields) => {
+                            if (!err && rows.length>0) {
+                                mysqlConnection.query("select * from bills where id = ? and owner_id = ?",[req.params.id, owner_id], (err,results) => {
+                                    if (!err && results.length>0)
+                                        res.status(200).send({ results });
                                     else
                                         res.status(400);
     
                                 });
-                                //res.status(201).send({ message: "New bill has been created" });
                             
                             }
                             else
-                                res.status(400).send({ message: "Error Updating bill" });
+                                res.status(401).send({ message: "Not authorized to upate the bill" });
     
                         })
                     }
@@ -196,11 +219,11 @@ exports.delete_bill = (req, res) => {
                 const owner_id = results[0].id;
                 mysqlConnection.query("select * from bills where id = ?", req.params.id ,(err, results) => {
                     if(results.length > 0){
-                        mysqlConnection.query("Delete from bills where id = ?", req.params.id, (err, rows, fields) => {
+                        mysqlConnection.query("Delete from bills where id = ? and owner_id = ?", [req.params.id, owner_id], (err, rows, fields) => {
                             if (!err)
                                 res.status(204).send({ message: "Deleted bill" });
                             else
-                                res.status(400).send({ message: "Error deleting bill" });
+                                res.status(401).send({ message: "Not authorized to delete the bill" });
     
                         })
                     }

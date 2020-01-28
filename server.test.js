@@ -2,7 +2,7 @@ const app = require('./server') // Link to your server file
 const supertest = require('supertest')
 const request = supertest(app)
 
-// to test the post endpoint
+// to test the post endpoint for user
 describe('Post Endpoints', () => {
   it('should create a new user', async () => {
     const res = await supertest(app)
@@ -32,3 +32,22 @@ describe('Post Endpoints', () => {
     // expect(res.body).toHaveProperty('post')
   })
 });
+
+
+
+// to test the post endpoint for bills
+// describe('Post Endpoints', () => {
+//   it('should create a new user', async () => {
+//     const res = await supertest(app)
+//       .post('/v1/bill')
+//       .send({
+//         vendor: "Northeastern University",
+//         bill_date: "2020-01-06",
+//         due_date: "2020-01-12",
+//         amount_due: 100.89,
+//         paymentStatus: "paid"
+//       })
+//     expect(res.statusCode).toEqual(201)
+//     // expect(res.body).toHaveProperty('post')
+//   })
+// });

@@ -100,13 +100,6 @@ exports.post_user = async (req, res) => {
                         }
                         else {
 
-                            // bcrypt.hash(user.password, saltRounds, function (err, hash) {
-                            //     mysqlConnection.query("INSERT INTO users(email_address, first_name, last_name, password, account_created, account_updated) VALUES (?,?,?,?,?,?) ", [ user.email_address, user.first_name, user.last_name, hash, new Date().toISOString().split('T')[0]+' '+ new Date().toTimeString().split(' ')[0] , new Date().toISOString().split('T')[0]+' '+ new Date().toTimeString().split(' ')[0]], function (error, results, fields) {
-                            //         if (err) res.send(err);
-                            //         return res.status(201).send({ message: 'New user has been created successfully.'});
-                            //     });
-                            // });
-
                             bcrypt.hash(user.password, saltRounds, function (err, hash) {
                                 mysqlConnection.query("INSERT INTO users(id, email_address, first_name, last_name, password, account_created, account_updated) VALUES (?,?,?,?,?,?,?) ", [uuidv4(), user.email_address, user.first_name, user.last_name, hash, new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0], new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0]], function (error, results, fields) {
                                     if (err) res.send(err);

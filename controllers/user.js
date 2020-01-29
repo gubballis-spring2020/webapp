@@ -91,6 +91,17 @@ exports.post_user = async (req, res) => {
                     res.status(400).send({ message: 'account created or updated field cannot be set' });
 
                 }
+                if (!req.body.first_name) {
+                    return res.status(400).send({ message: 'First name is not provided' });
+                }
+    
+                if (!req.body.last_name) {
+                    return res.status(400).send({ message: 'Last name is not provided' });
+                }
+    
+                if (!req.body.password) {
+                    return res.status(400).send({ message: 'Password is not provided' });
+                }
                 else {
                     // check if password meets requirements
                     joi.validate(req.body, schema, (err, result) => {

@@ -46,9 +46,9 @@ exports.get_user = (req, res) => {
 
                 mysqlConnection.query("select id, email_address, first_name, last_name, account_created, account_updated from users where email_address = ?", email_address, (err, rows, fields) => {
                     if (!err)
-                        res.send({ rows });
+                        res.status(200).send({ rows });
                     else
-                        console.log(err);
+                        return res.status(400).send(err);
 
                 })
             }
@@ -76,6 +76,22 @@ exports.post_user = async (req, res) => {
         return res.status(400).send({ message: 'Please provide user' });
     }
 
+    if (!req.body.first_name) {
+        return res.status(400).send({ message: 'First name is not provided' });
+    }
+
+    if (!req.body.last_name) {
+        return res.status(400).send({ message: 'Last name is not provided' });
+    }
+
+    if (!req.body.password) {
+        return res.status(400).send({ message: 'Password is not provided' });
+    }
+
+    if (!req.body.email_address) {
+        return res.status(400).send({ message: 'Email is not provided' });
+    }
+
     //console.log(uuid.v4());
 
     mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, result) {
@@ -84,11 +100,11 @@ exports.post_user = async (req, res) => {
         }
         else {
             if (result.length > 0) {
-                res.status(400).send({ message: "Email already exists" });
+                return res.status(400).send({ message: "Email already exists" });
             }
             else {
                 if (req.body.account_created || req.body.account_updated) {
-                    res.status(400).send({ message: 'account created or updated field cannot be set' });
+                    return res.status(400).send({ message: 'account created or updated field cannot be set' });
 
                 }
                 if (!req.body.first_name) {
@@ -107,13 +123,13 @@ exports.post_user = async (req, res) => {
                     joi.validate(req.body, schema, (err, result) => {
                         if (err) {
                             //console.log(err);
-                            res.status(400).send({ message: 'Email or Password does not meet requirements' });
+                            return res.status(400).send({ message: 'Email or Password does not meet requirements' });
                         }
                         else {
 
                             bcrypt.hash(user.password, saltRounds, function (err, hash) {
                                 mysqlConnection.query("INSERT INTO users(id, email_address, first_name, last_name, password, account_created, account_updated) VALUES (?,?,?,?,?,?,?) ", [uuidv4(), user.email_address, user.first_name, user.last_name, hash, new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0], new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0]], function (error, results, fields) {
-                                    if (err) res.send(err);
+                                    if (err) return res.statsu(400).send(err);
                                     return res.status(201).send({ message: 'New user has been created successfully.' });
                                 });
                             });
@@ -181,13 +197,10 @@ exports.update_user = (req, res) => {
 
                 bcrypt.hash(user.password, saltRounds, function (err, hash) {
                     mysqlConnection.query("update users set first_name = ?, last_name = ?, password = ?, account_updated = ? where email_address = ?", [user.first_name, user.last_name, hash, new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0], email_address], function (error, results, fields) {
-                        if (error) res.send({ message: "User can only update his/her records" });
+                        if (error) res.status(401).send({ message: "User can only update his/her records" });
                         return res.status(200).send({ message: 'The user has been updated successfully.' });
                     });
                 });
-
-
-
             })
         }
     });

@@ -147,27 +147,12 @@ exports.get_all_bills = (req, res) => {
                 if (!result) return res.status(401).send({ message: 'Password not valid! Not authorized' });
 
                 const owner_id = results[0].id;
-                // mysqlConnection.query("select * from bills where owner_id = ?", owner_id, (err, results) => {
-                //     if (results.length > 0)
-                //         res.send(results);
-                //     else
-                //         res.status(404).send({ message: "Bills not found" });
-
-                // })
-
-                mysqlConnection.query("select * from bills where id = ?", req.params.id ,(err, results) => {
-
-                    if(results.length>0){
-                        mysqlConnection.query("select * from bills where owner_id = ? and id = ?", [owner_id, req.params.id], (err, results) => {
-                            if (results.length > 0)
-                                res.send(results);
-                            else
-                                res.status(401).send({ message: "Not authorized to see bill" });
-        
-                        })
-                    }
+                mysqlConnection.query("select * from bills where owner_id = ?", owner_id, (err, results) => {
+                    if (results.length > 0)
+                        res.send(results);
                     else
-                        res.status(404).send({ message: "Bill not found" });
+                        res.status(404).send({ message: "Bills not found" });
+
                 })
             }
         }
@@ -253,7 +238,7 @@ exports.delete_bill = (req, res) => {
     mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, results) {
         if (err) {
             //console.log(err);
-            res.status(400).send({ message: "Provide valid email address" });
+            res.status(401).send({ message: "Provide valid email address" });
         }
         else {
             if (results.length == 0) {
@@ -267,7 +252,7 @@ exports.delete_bill = (req, res) => {
                 mysqlConnection.query("select * from bills where id = ?", req.params.id ,(err, results) => {
                     if(results.length > 0){
                         mysqlConnection.query("Delete from bills where id = ? and owner_id = ?", [req.params.id, owner_id], (err, rows, fields) => {
-                            if (!err)
+                            if (!err && rows.affectedRows > 0)
                                 res.status(204).send({ message: "Deleted bill" });
                             else
                                 res.status(401).send({ message: "Not authorized to delete the bill" });

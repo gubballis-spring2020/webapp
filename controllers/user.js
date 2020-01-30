@@ -198,7 +198,7 @@ exports.update_user = (req, res) => {
                 bcrypt.hash(user.password, saltRounds, function (err, hash) {
                     mysqlConnection.query("update users set first_name = ?, last_name = ?, password = ?, account_updated = ? where email_address = ?", [user.first_name, user.last_name, hash, new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0], email_address], function (error, results, fields) {
                         if (error) res.status(401).send({ message: "User can only update his/her records" });
-                        return res.status(200).send({ message: 'The user has been updated successfully.' });
+                        return res.status(204).send({ message: 'The user has been updated successfully.' });
                     });
                 });
             })

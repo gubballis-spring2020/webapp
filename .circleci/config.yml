@@ -30,8 +30,7 @@ jobs:
           command: |
             sudo apt-get update && sudo apt-get upgrade && sudo apt-get install mysql-client
             mysql -h 127.0.0.1 -u root -pparasites CSYE6225 < sql/create.sql
-            mysql -h 127.0.0.1 -u root -pparasites --execute="USE CSYE6225; select * from users;" 
-      
+ 
       - run:
           # Run tests using Jest
           name: Tests run
@@ -41,14 +40,40 @@ jobs:
   build:
     docker:
       - image: circleci/node:8.10.0
+      - image: circleci/mysql:5.7
+        environment:
+          MYSQL_ROOT_PASSWORD: parasites
+          MYSQL_DATABASE: CSYE6225
+
     steps:
       - checkout
+      # Install node packages
+      - run: npm install
+      
       - run:
-          name: Running builds
+      # Our primary container isn't MYSQL so run a sleep command until it's ready.
+          name: Waiting for MySQL to be ready
           command: |
-            echo "Hello World"
-            
+            for i in `seq 1 10`;
+            do
+              nc -z 127.0.0.1 3306 && echo Success && exit 0
+              echo -n .
+              sleep 1
+            done
+            echo Failed waiting for MySQL && exit 1
 
+      - run:
+          name: Install mysql-client and create the users table
+          command: |
+            sudo apt-get update && sudo apt-get upgrade && sudo apt-get install mysql-client
+            mysql -h 127.0.0.1 -u root -pparasites CSYE6225 < sql/create.sql
+ 
+      - run:
+          # Run tests using Jest
+          name: Tests run
+          command: |
+            npm test
+            
 
 workflows:
   version: 2

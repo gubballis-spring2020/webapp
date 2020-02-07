@@ -1,7 +1,7 @@
 const mysqlConnection = require("../config/connection");
-
+const Bill = require("../models/bills");
+const User = require("../models/user");
 const uuidv4 = require('uuid/v4');
-const joi = require("joi");
 
 // Using bcrypt to hash the password and store in the databse
 const bcrypt = require("bcrypt");
@@ -22,48 +22,38 @@ exports.post_bills = async (req, res) => {
         return res.status(401).send({ error: true, message: 'Please provide email address or password' });
     }
 
-    if(!bill.vendor || !bill.bill_date || !bill.due_date || !bill.amount_due || !bill.paymentStatus || !bill.categories){
-        return res.status(400).send({ error: true, message: 'One or more fields are not provided to create' });
-    }
-
-    mysqlConnection.query("select * from users where email_address = ?", email_address, function (err,results) {
-        try{
-            if (err) {
-            //console.log(err);
-            return res.status(400).send({ message: "Provide valid email address" });
+    User.findOne({
+        where: {
+            email_address: email_address
         }
-        else {
-            if (results.length == 0) {
-                return res.status(400).send({ message: "Email address does not exist" });
-            }
-            else {
-                const result = bcrypt.compareSync(password, results[0].password);               // compare the hashed password with password provided
-                if (!result) return res.status(401).send({ message: 'Password not valid!' });
-
-                const uuid = uuidv4();
-                mysqlConnection.query("INSERT INTO bills(id, created_ts, updated_ts, owner_id, vendor, bill_date, due_date, amount_due, categories, paymentStatus) VALUES (?,?,?,?,?,?,?,?,?,?) ", [uuid, new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0], new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0], results[0].id, bill.vendor, bill.bill_date, bill.due_date, bill.amount_due, bill.categories.toString(), bill.paymentStatus], (err, rows, fields) => {
-                    if (!err) {
-                        mysqlConnection.query("select * from bills where id = ?",uuid, (err, rows, fields) => {
-                            if (!err)
-                                return res.status(201).send({ rows });
-                            else
-                                return res.status(400);
-
-                        });
-                        //res.status(201).send({ message: "New bill has been created" });
-                       
-                    }
-                    else
-                        return res.status(400).send({ message: "Error inserting new bill" });
-
-                })
-            }
+    }).then((result) => {
+        // console.log(result['password']);
+        if (result.length == 0) { // false if author already exists and was not created.
+            return res.status(400).send({ message: "Email does not exists" })
         }
 
-        } catch(err){
-            console.log(err);
-        }
-    });
+        const pass_result = bcrypt.compareSync(password, result['password']);               // compare the hashed password with password provided
+        if (!pass_result) return res.status(401).send({ message: 'Password not valid!' });
+
+        Bill.create({
+            id: uuidv4(),
+            created_ts: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0],
+            updated_ts: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0],
+            owner_id: result['id'],
+            vendor: bill.vendor,
+            bill_date: bill.bill_date,
+            due_date: bill.due_date,
+            amount_due: bill.amount_due,
+            categories: bill.categories.toString(),
+            paymentStatus: bill.paymentStatus
+        }).then((result) => {
+            res.status(201).send({ id: result['id'], created_ts: result['createdAt'], updated_ts: result['updatedAt'], owner_id: result['owner_id'], vendor: result['vendor'], bill_date: result['bill_date'], due_date: result['due_date'], amount_date: result['amount_due'], categories: result['categories'], paymentStatus: result['paymentStatus'] })
+        })
+            .catch(err => { console.log(err); return res.status(400).send({ message: 'Error creating bill' }) })
+
+
+    }).catch(err => { console.log(err); return res.status(400).send({ message: 'Email does not exists' }) })
+
 };
 
 // Fetch a bill based on the bill ID and the user
@@ -79,48 +69,48 @@ exports.get_bills = (req, res) => {
         return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
-    mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, results) {
-        if (err) {
-            //console.log(err);
-            res.status(400).send({ message: "Provide valid email address" });
+    User.findOne({
+        where: {
+            email_address: email_address
         }
-        else {
-            if (results.length == 0) {
-                res.status(400).send({ message: "Email address does not exist" });
-            }
-            else {
-                const result = bcrypt.compareSync(password, results[0].password);               // compare the hashed password with password provided
-                if (!result) return res.status(401).send({ message: 'Password not valid! Not authorized' });
-
-                const owner_id = results[0].id;
-                // mysqlConnection.query("select * from bills where owner_id = ? and id = ?", [owner_id, req.params.id], (err, results) => {
-                //     if (results.length > 0)
-                //         res.send(results);
-                //     else
-                //         res.status(404).send({ message: "Bill not found" });
-
-                // })
-
-                mysqlConnection.query("select * from bills where id = ?", req.params.id ,(err, results) => {
-
-                    if(results.length>0){
-                        mysqlConnection.query("select * from bills where owner_id = ? and id = ?", [owner_id, req.params.id], (err, results) => {
-                            if (results.length > 0)
-                                res.send(results);
-                            else
-                                res.status(401).send({ message: "Not authorized to see bill" });
-        
-                        })
-                    }
-                    else
-                        res.status(404).send({ message: "Bill not found" });
-                })
-            }
+    }).then((result) => {
+        // console.log(result['password']);
+        if (result.length == 0) { // false if author already exists and was not created.
+            return res.status(400).send({ message: "Email does not exists" })
         }
-    });
+
+        const pass_result = bcrypt.compareSync(password, result['password']);               // compare the hashed password with password provided
+        if (!pass_result) return res.status(401).send({ message: 'Password not valid!' });
+
+        const user_id = result['id'];
+
+        Bill.findOne({
+            where: {
+                id: req.params.id
+            }
+        }).then((result) => {
+            if (result.lenth == 0) {
+                return res.status(400).send({ message: 'Bill not found' })
+            }
+
+            Bill.findOne({
+                where: {
+                    id: req.params.id,
+                    owner_id: user_id
+                }
+            }).then((result) => {
+
+                res.status(200).send({ id: result['id'], created_ts: result['createdAt'], updated_ts: result['updatedAt'], owner_id: result['owner_id'], vendor: result['vendor'], bill_date: result['bill_date'], due_date: result['due_date'], amount_date: result['amount_due'], categories: result['categories'], paymentStatus: result['paymentStatus'] })
+            })
+                .catch(err => { return res.status(401).send({ message: 'Bill cannot be seen' }) })
+        })
+            .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
+    })
+        .catch(err => { return res.status(400).send({ message: 'Email does not exists' }) })
+
 };
 
-// Get all bills in the table
+// Get all bills in the table for that user
 exports.get_all_bills = (req, res) => {
 
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
@@ -133,35 +123,44 @@ exports.get_all_bills = (req, res) => {
         return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
-    mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, results) {
-        if (err) {
-            //console.log(err);
-            res.status(400).send({ message: "Provide valid email address" });
-        }
-        else {
-            if (results.length == 0) {
-                res.status(400).send({ message: "Email address does not exist" });
-            }
-            else {
-                const result = bcrypt.compareSync(password, results[0].password);               // compare the hashed password with password provided
-                if (!result) return res.status(401).send({ message: 'Password not valid! Not authorized' });
 
-                const owner_id = results[0].id;
-                mysqlConnection.query("select * from bills where owner_id = ?", owner_id, (err, results) => {
-                    if (results.length > 0)
-                        res.send(results);
-                    else
-                        res.status(404).send({ message: "Bills not found" });
-
-                })
-            }
+    User.findOne({
+        where: {
+            email_address: email_address
         }
-    });
+    }).then((user_result) => {
+        // console.log(result['password']);
+        if (user_result.length == 0) { // false if author already exists and was not created.
+            return res.status(400).send({ message: "Email does not exists" })
+        }
+
+        const user_id = user_result['id'];
+
+        const pass_result = bcrypt.compareSync(password, user_result['password']);               // compare the hashed password with password provided
+        if (!pass_result) return res.status(401).send({ message: 'Password not valid!' });
+
+        Bill.findAll({
+            where: {
+                owner_id: user_id
+            }
+        }).then((results) => {
+
+            if (results.lenth == 0) {
+                return res.status(400).send({ message: 'Bill not found' })
+            }
+
+            res.status(200).send(results);
+
+        })
+            .catch(err => { console.log(err); return res.status(400).send({ message: 'Bill not found' }) })
+    })
+        .catch(err => { return res.status(400).send({ message: 'Email does not exists' }) })
 };
+
 
 // Update a bill based on the bill ID and user
 exports.update_bill = (req, res) => {
-   
+
     const bill = req.body;
 
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
@@ -171,58 +170,78 @@ exports.update_bill = (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
-        return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
+        return res.status(401).send({ error: true, message: 'Please provide email address or password' });
     }
 
-    if(!bill.vendor || !bill.bill_date || !bill.due_date || !bill.amount_due || !bill.paymentStatus || !bill.categories){
-        return res.status(400).send({ error: true, message: 'One or more fields are not provided for update' });
+    if(!bill.vendor || !bill.due_date || !bill.bill_date || !bill.categories || !bill.paymentStatus){
+        return res.status(400).send({ message: 'One or more fileds are not provided for update' });
     }
 
-    mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, results) {
-        if (err) {
-            //console.log(err);
-            res.status(400).send({ message: "Provide valid email address" });
+    User.findOne({
+        where: {
+            email_address: email_address
         }
-        else {
-            if (results.length == 0) {
-                res.status(400).send({ message: "Email address does not exist" });
-            }
-            else {
-                const result = bcrypt.compareSync(password, results[0].password);               // compare the hashed password with password provided
-                if (!result) return res.status(401).send({ message: 'Password not valid! Not authorized' });
+    }).then((result) => {
+        // console.log(result['password']);
+        if (result.length == 0) { // false if author already exists and was not created.
+            return res.status(400).send({ message: "Email does not exists" })
+        }
 
-                const owner_id = results[0].id;
-                mysqlConnection.query("select * from bills where id = ?", req.params.id ,(err, results) => {
-                    if(results.length > 0){
-                        mysqlConnection.query("Update bills set updated_ts = ?, vendor = ?, bill_date = ?, due_date = ?, amount_due = ?, categories = ?, paymentStatus = ? where id = ? and owner_id = ?", [new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0], bill.vendor, bill.bill_date, bill.due_date, bill.amount_due, bill.categories.toString(), bill.paymentStatus, req.params.id, owner_id], (err, rows, fields) => {
-                            if (!err && rows.affectedRows>0 ) {
-                                
-                                mysqlConnection.query("select * from bills where id = ? and owner_id = ?",[req.params.id, owner_id], (err,results) => {
-                                    if (!err && results.length>0)
-                                        res.status(200).send({ results });
-                                    else
-                                        res.status(400);
-    
-                                });
-                            
-                            }
-                            else
-                                res.status(401).send({ message: "Not authorized to upate the bill" });
-    
-                        })
+        const pass_result = bcrypt.compareSync(password, result['password']);               // compare the hashed password with password provided
+        if (!pass_result) return res.status(401).send({ message: 'Password not valid!' });
+
+        const user_id = result['id'];
+        console.log(user_id);
+
+        Bill.findOne({
+            where: {
+                id: req.params.id
+            }
+        }).then((result) => {
+
+            if (result.lenth == 0) {
+                return res.status(400).send({ message: 'Bill not found' })
+            }
+
+            Bill.update({
+                updated_ts: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0],
+                vendor: bill.vendor,
+                bill_date: bill.bill_date,
+                due_date: bill.due_date,
+                amount_due: bill.amount_due,
+                categories: bill.categories.toString(),
+                paymentStatus: bill.paymentStatus
+                
+            },{
+                where: {
+                    id: req.params.id,
+                    owner_id: user_id
+                }
+            }).then((result) => {
+                if (result[0] == 0) {
+                    return res.status(401).send({ message: 'Bill cannot be updated' })
+                }
+
+                Bill.findOne({
+                    where: {
+                        id: req.params.id,
+                        owner_id: user_id
                     }
-                    else
-                        res.status(404).send({ message: "Bill not found" });
-                   
+                }).then((result) => {
+                    res.status(200).send(result)
                 })
-            }
-        }
-    });
+            })
+            .catch(err => {return res.status(400).send({ message: 'Error updating bill' }) })
+        })
+        .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
+    })
+    .catch (err => { return res.status(400).send({ message: 'Email does not exists' }) })
 };
+
 
 // Delete a bill based on the bill ID and user
 exports.delete_bill = (req, res) => {
-   
+
     const bill = req.body;
 
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
@@ -235,35 +254,49 @@ exports.delete_bill = (req, res) => {
         return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
-    mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, results) {
-        if (err) {
-            //console.log(err);
-            res.status(401).send({ message: "Provide valid email address" });
+    User.findOne({
+        where: {
+            email_address: email_address
         }
-        else {
-            if (results.length == 0) {
-                res.status(400).send({ message: "Email address does not exist" });
-            }
-            else {
-                const result = bcrypt.compareSync(password, results[0].password);               // compare the hashed password with password provided
-                if (!result) return res.status(401).send({ message: 'Password not valid! Not authorized' });
+    }).then((result) => {
+        // console.log(result['password']);
+        if (result.length == 0) { // false if author already exists and was not created.
+            return res.status(400).send({ message: "Email does not exists" })
+        }
 
-                const owner_id = results[0].id;
-                mysqlConnection.query("select * from bills where id = ?", req.params.id ,(err, results) => {
-                    if(results.length > 0){
-                        mysqlConnection.query("Delete from bills where id = ? and owner_id = ?", [req.params.id, owner_id], (err, rows, fields) => {
-                            if (!err && rows.affectedRows > 0)
-                                res.status(204).send({ message: "Deleted bill" });
-                            else
-                                res.status(401).send({ message: "Not authorized to delete the bill" });
-    
-                        })
-                    }
-                    else
-                        res.status(404).send({ message: "Bill not found" });
-                   
-                })
+        const pass_result = bcrypt.compareSync(password, result['password']);               // compare the hashed password with password provided
+        if (!pass_result) return res.status(401).send({ message: 'Password not valid!' });
+
+        const user_id = result['id'];
+        console.log(user_id);
+
+        Bill.findOne({
+            where: {
+                id: req.params.id
             }
-        }
-    });
+        }).then((result) => {
+
+            if (result.lenth == 0) {
+                return res.status(400).send({ message: 'Bill not found' })
+            }
+
+            Bill.destroy({
+                where: {
+                    id: req.params.id,
+                    owner_id: user_id
+                }
+                
+            }).then((result) => {
+                console.log(result)
+                if (result == 0) {
+                    return res.status(401).send({ message: 'Bill cannot be deleted' })
+                }
+
+                return res.status(204).send()
+            })
+            .catch(err => {console.log(err); return res.status(400).send({ message: 'Error deleting bill' }) })
+        })
+        .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
+    })
+    .catch (err => { return res.status(400).send({ message: 'Email does not exists' }) })
 };

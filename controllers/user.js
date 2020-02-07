@@ -1,5 +1,5 @@
 const mysqlConnection = require("../config/connection");
-
+const User = require("../models/user");
 const uuidv4 = require('uuid/v4');
 const joi = require("joi");
 
@@ -7,10 +7,8 @@ const joi = require("joi");
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 
-
 // Export Get user request
 exports.get_user = (req, res) => {
-
 
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
@@ -22,136 +20,71 @@ exports.get_user = (req, res) => {
         return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
-    mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, results) {
-        if (err) {
-            //console.log(err);
-            res.status(400).send("Provide valid email address");
+    User.findAll({
+        where: {
+            email_address: email_address
         }
-        else {
-            if (results.length == 0) {
-                res.status(400).send("Email address does not exist");
-            }
-            else {
-                const result = bcrypt.compareSync(password, results[0].password);               // compare the hashed password with password provided
-                console.log(result)
-                if (!result) return res.status(401).send({ message: 'Password not valid!' });
+    }).then((result) => {
+        console.log(result.length);
+        if ((result.length == 0)) res.status(400).send({ message: 'Email not found' })
 
-                // mysqlConnection.query("select email_address, first_name, last_name from users where email_address = ?", email_address, (err, rows, fields) => {
-                //     if (!err)
-                //         res.send({ rows });
-                //     else
-                //         console.log(err);
+        const pass_compare = bcrypt.compareSync(password, result[0].password);               // compare the hashed password with password provided
+        // console.log(pass_compare)
+        if (!pass_compare) return res.status(401).send({ message: 'Password not valid!' });
 
-                // })
+        res.status(200).json({ id: result[0].id, first_name: result[0].first_name, last_name: result[0].last_name, email_address: result[0].email_address, account_created: result[0].createdAt, account_updated: result[0].updatedAt });
+    }).catch(err => res.status(400))
+}
 
-                mysqlConnection.query("select id, email_address, first_name, last_name, account_created, account_updated from users where email_address = ?", email_address, (err, rows, fields) => {
-                    if (!err)
-                        res.status(200).send({ rows });
-                    else
-                        return res.status(400).send(err);
 
-                })
-            }
-        }
-    });
-};
-
-// Export post user request
+// Create a user
 exports.post_user = async (req, res) => {
 
-    let user = req.body;
-    let email_address = req.body.email_address;
+    const user = req.body;
+    const password_schema = joi.string().regex(/[a-zA-Z0-9]{5,30}/).required();
 
-    // schema to check for email and password validation
-    const schema = joi.object().keys({
-        email_address: joi.string().trim().email().required(),
-        password: joi.string().regex(/[a-zA-Z0-9]{5,30}/).required(),
-        first_name: joi.string(),
-        last_name: joi.string()
-    });
-
-    //console.log(schema);
-
-    if (!user) {
-        return res.status(400).send({ message: 'Please provide user' });
+    if (!user.email_address) {
+        return res.status(400).send({ message: 'Email address not provided' });
     }
 
-    if (!req.body.first_name) {
-        return res.status(400).send({ message: 'First name is not provided' });
-    }
-
-    if (!req.body.last_name) {
-        return res.status(400).send({ message: 'Last name is not provided' });
-    }
-
-    if (!req.body.password) {
-        return res.status(400).send({ message: 'Password is not provided' });
-    }
-
-    if (!req.body.email_address) {
-        return res.status(400).send({ message: 'Email is not provided' });
-    }
-
-    //console.log(uuid.v4());
-
-    mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, result) {
-        if (err) {
-            console.log(err);
-        }
-        else {
-            if (result.length > 0) {
-                return res.status(400).send({ message: "Email already exists" });
+    bcrypt.hash(user.password, saltRounds, function (err, hash) {
+        User.findOrCreate({
+            where: {
+                email_address: user.email_address
+            },
+            defaults: {
+                id: uuidv4(),
+                email_address: user.email_address,
+                password: hash,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                account_created: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0],
+                account_updated: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0]
             }
-            else {
-                if (req.body.account_created || req.body.account_updated) {
-                    return res.status(400).send({ message: 'account created or updated field cannot be set' });
-
-                }
-                if (!req.body.first_name) {
-                    return res.status(400).send({ message: 'First name is not provided' });
-                }
-    
-                if (!req.body.last_name) {
-                    return res.status(400).send({ message: 'Last name is not provided' });
-                }
-    
-                if (!req.body.password) {
-                    return res.status(400).send({ message: 'Password is not provided' });
-                }
-                else {
-                    // check if password meets requirements
-                    joi.validate(req.body, schema, (err, result) => {
-                        if (err) {
-                            //console.log(err);
-                            return res.status(400).send({ message: 'Email or Password does not meet requirements' });
-                        }
-                        else {
-
-                            bcrypt.hash(user.password, saltRounds, function (err, hash) {
-                                mysqlConnection.query("INSERT INTO users(id, email_address, first_name, last_name, password, account_created, account_updated) VALUES (?,?,?,?,?,?,?) ", [uuidv4(), user.email_address, user.first_name, user.last_name, hash, new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0], new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0]], function (error, results, fields) {
-                                    if (err) return res.statsu(400).send(err);
-                                    return res.status(201).send({ message: 'New user has been created successfully.' });
-                                });
-                            });
-                        }
-
-                    })
-                }
-
+        }).then((result) => {
+            if (!result[1]) { // false if user already exists and was not created.
+                return res.status(400).send({ message: "Email address already exists" })
             }
-        }
-    });
-};
 
+            joi.validate(user.password, password_schema, (err, result) => {
+                if (err) {
+                    //console.log(err);
+                    return res.status(400).send({ message: 'Password does not meet requirements' });
+                }
+
+                res.status(201).send({ message: "User created" })
+            })
+        })
+        .catch(err => { return res.status(400).send({ message: 'Error creating user' }) })
+
+    })
+
+}
 
 // Update a user
 exports.update_user = (req, res) => {
-
-    let user = req.body;
-
-    const schema = joi.string().regex(/[a-zA-Z0-9]{5,30}/).required();
-
-    //console.log(schema);
+    const user = req.body;
+    const password_schema = joi.string().regex(/[a-zA-Z0-9]{5,30}/).required();
 
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
@@ -160,48 +93,51 @@ exports.update_user = (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
-        return res.status(401).send({ error: true, message: 'Please provide emailAddress or password to update' });
+        return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
-    mysqlConnection.query("select * from users where email_address = ?", email_address, function (err, results) {
-        if (err) {
-            //console.log(err);
-            res.status(400).send("Provided email address does not exist");
-        }
-        if (results.length == 0) res.status(400).send({ message: "Provided email address does not exist" });
+    if (user.email_address) {
+        return res.status(400).send({ message: 'Email cannot be updated' });
+    }
 
-        else {
-            if (req.body.account_created || req.body.account_updated || req.body.email_address) {
-                res.status(400).send({ message: 'account created or updated or email address field cannot be updated' });
+    if (!user.first_name || !user.last_name || !user.password) {
+        return res.status(400).send({ message: 'One or more fileds are not provided for update' });
+    }
+
+    bcrypt.hash(user.password, saltRounds, function (err, hash) {
+        User.findOne({
+            where: {
+                email_address: email_address
+            }
+        }).then((result) => {
+            if (result['email_address'] == null) { // false if author already exists and was not created.
+                return res.status(400).send({ message: "Email does not exists" })
             }
 
-            if (!req.body.first_name) {
-                return res.status(400).send({ message: 'First name is not provided' });
-            }
+            const pass_compare = bcrypt.compareSync(password, result['password']);               // compare the hashed password with password provided
+            // console.log(pass_compare)
+            if (!pass_compare) return res.status(401).send({ message: 'Password not valid!' });
 
-            if (!req.body.last_name) {
-                return res.status(400).send({ message: 'Last name is not provided' });
-            }
-
-            if (!req.body.password) {
-                return res.status(400).send({ message: 'Password is not provided' });
-            }
-
-            const result = bcrypt.compareSync(password, results[0].password);
-            if (!result) return res.status(401).send({ message: 'Password not valid!' });
-            joi.validate(req.body.password, schema, (err, result) => {
-                if (err) {
-                    //console.log(err);
-                    return res.status(400).send({ message: 'password does not meet requirements' });
+            User.update({
+                password: hash,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                account_updated: new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0]
+            }, {
+                where: {
+                    email_address: email_address
                 }
+            }).then(() => {
+                joi.validate(user.password, password_schema, (err, result) => {
+                    if (err) {
+                        //console.log(err);
+                        return res.status(400).send({ message: 'Password does not meet requirements' });
+                    }
 
-                bcrypt.hash(user.password, saltRounds, function (err, hash) {
-                    mysqlConnection.query("update users set first_name = ?, last_name = ?, password = ?, account_updated = ? where email_address = ?", [user.first_name, user.last_name, hash, new Date().toISOString().split('T')[0] + ' ' + new Date().toTimeString().split(' ')[0], email_address], function (error, results, fields) {
-                        if (error) res.status(401).send({ message: "User can only update his/her records" });
-                        return res.status(204).send({ message: 'The user has been updated successfully.' });
-                    });
-                });
-            })
-        }
-    });
-};
+                    res.status(204).send({ message: "User Updated" })
+                })
+            }).catch(err => { console.log(err); return res.status(400).send({ message: 'Error updating user' }) })
+
+        }).catch(err => { return res.status(400).send({ message: 'Email does not exists' }) })
+    })
+}

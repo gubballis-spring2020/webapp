@@ -23,6 +23,14 @@ var Files = mysqlConnection.define('files', {
   url: {
     type: Sequelize.STRING,
     field: 'url' 
+  },
+  file_owner: {
+    type: Sequelize.STRING,
+    field: 'file_owner' 
+  },
+  size: {
+    type: Sequelize.DOUBLE,
+    field: 'size' 
   }
 }, {
   freezeTableName: true, // Model tableName will be the same as the model name

@@ -29,7 +29,6 @@ jobs:
           name: Install mysql-client and create the users table
           command: |
             sudo apt-get update && sudo apt-get upgrade && sudo apt-get install mysql-client
-            mysql -h 127.0.0.1 -u root -pparasites CSYE6225 < sql/create.sql
  
       - run:
           # Run tests using Jest

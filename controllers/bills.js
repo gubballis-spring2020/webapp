@@ -45,9 +45,10 @@ exports.post_bills = async (req, res) => {
             due_date: bill.due_date,
             amount_due: bill.amount_due,
             categories: bill.categories.toString(),
-            paymentStatus: bill.paymentStatus
+            paymentStatus: bill.paymentStatus,
+            attachment: ""
         }).then((result) => {
-            res.status(201).send({ id: result['id'], created_ts: result['createdAt'], updated_ts: result['updatedAt'], owner_id: result['owner_id'], vendor: result['vendor'], bill_date: result['bill_date'], due_date: result['due_date'], amount_date: result['amount_due'], categories: result['categories'], paymentStatus: result['paymentStatus'] })
+            res.status(201).send({ id: result['id'], created_ts: result['createdAt'], updated_ts: result['updatedAt'], owner_id: result['owner_id'], vendor: result['vendor'], bill_date: result['bill_date'], due_date: result['due_date'], amount_date: result['amount_due'], categories: result['categories'], paymentStatus: result['paymentStatus'], attachment: result['attachment'] })
         })
             .catch(err => { console.log(err); return res.status(400).send({ message: 'Error creating bill' }) })
 
@@ -86,7 +87,7 @@ exports.get_bills = (req, res) => {
 
         Bill.findOne({
             where: {
-                id: req.params.id
+                id: req.params.billId
             }
         }).then((result) => {
             if (result.lenth == 0) {
@@ -95,12 +96,12 @@ exports.get_bills = (req, res) => {
 
             Bill.findOne({
                 where: {
-                    id: req.params.id,
+                    id: req.params.billId,
                     owner_id: user_id
                 }
             }).then((result) => {
 
-                res.status(200).send({ id: result['id'], created_ts: result['createdAt'], updated_ts: result['updatedAt'], owner_id: result['owner_id'], vendor: result['vendor'], bill_date: result['bill_date'], due_date: result['due_date'], amount_date: result['amount_due'], categories: result['categories'], paymentStatus: result['paymentStatus'] })
+                res.status(200).send({ id: result['id'], created_ts: result['createdAt'], updated_ts: result['updatedAt'], owner_id: result['owner_id'], vendor: result['vendor'], bill_date: result['bill_date'], due_date: result['due_date'], amount_date: result['amount_due'], categories: result['categories'], paymentStatus: result['paymentStatus'] , attachment: result['attachment']})
             })
                 .catch(err => { return res.status(401).send({ message: 'Bill cannot be seen' }) })
         })
@@ -195,7 +196,7 @@ exports.update_bill = (req, res) => {
 
         Bill.findOne({
             where: {
-                id: req.params.id
+                id: req.params.billId
             }
         }).then((result) => {
 
@@ -214,7 +215,7 @@ exports.update_bill = (req, res) => {
                 
             },{
                 where: {
-                    id: req.params.id,
+                    id: req.params.billId,
                     owner_id: user_id
                 }
             }).then((result) => {
@@ -224,7 +225,7 @@ exports.update_bill = (req, res) => {
 
                 Bill.findOne({
                     where: {
-                        id: req.params.id,
+                        id: req.params.billId,
                         owner_id: user_id
                     }
                 }).then((result) => {
@@ -272,7 +273,7 @@ exports.delete_bill = (req, res) => {
 
         Bill.findOne({
             where: {
-                id: req.params.id
+                id: req.params.billId
             }
         }).then((result) => {
 
@@ -282,7 +283,7 @@ exports.delete_bill = (req, res) => {
 
             Bill.destroy({
                 where: {
-                    id: req.params.id,
+                    id: req.params.billId,
                     owner_id: user_id
                 }
                 

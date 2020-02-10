@@ -7,16 +7,16 @@ const BillController = require("../controllers/bills");
 router.get('/', BillController.get_all_bills);
 
 // Get a specific bill
-router.get('/:id', BillController.get_bills);
+router.get('/:billId', BillController.get_bills);
 
 // Add a new bill  
 router.post('/', BillController.post_bills);
 
 // Update bill details
-router.put('/:id', BillController.update_bill);
+router.put('/:billId', BillController.update_bill);
 
 // Delete bill details
-router.delete('/:id', BillController.delete_bill);
+router.delete('/:billId', BillController.delete_bill);
 
 
 module.exports = router;

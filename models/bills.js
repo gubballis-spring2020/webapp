@@ -51,6 +51,11 @@ var Bill = mysqlConnection.define('bills', {
     type: Sequelize.ENUM('paid','due',' past_due','no_payment_required'),
     allowNull: false,
     field: 'paymentStatus' 
+  },
+  attachment: {
+    type: Sequelize.STRING,
+    allowNull: false,
+    field: 'attachment'
   }
 }, {
   freezeTableName: true // Model tableName will be the same as the model name
@@ -58,6 +63,6 @@ var Bill = mysqlConnection.define('bills', {
 });
 
 // Create the table if it does not exist
-Bill.sync();
+Bill.sync().then(() => console.log("Bills table created"));
 
 module.exports = Bill;

@@ -44,6 +44,6 @@ var User = mysqlConnection.define('users', {
 });
 
 // Create the table if it does not exist
-User.sync();
+User.sync().then(() => console.log("Users table created"));
 
 module.exports = User;

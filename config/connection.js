@@ -19,7 +19,7 @@ require('dotenv').config();
     
 // });
 
-mysqlConnection =  new Sequelize(dbConfig.DB , dbConfig.USER, dbConfig.PASSWORD, {
+mysqlConnection =  new Sequelize(dbConfig.DATABASE , dbConfig.USER, dbConfig.PASSWORD, {
     host: 'localhost',
     dialect: 'mysql',
     operatorsAliases: false,

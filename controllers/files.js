@@ -41,6 +41,7 @@ exports.post_file = async (req, res) => {
 
         const billId = req.baseUrl.substring(9, 45);
         const user_id = result['id'];
+        const file_owner = result['email_address']
 
         // Find if the bill exists, if not throw an error saying it does not exists
         Bill.findOne({
@@ -75,6 +76,8 @@ exports.post_file = async (req, res) => {
                             bill_id: billId,
                             file_name: files.files.name,
                             url: newpath,
+                            file_owner: file_owner,
+                            size: files.files.size
 
                         }).then(() => {
                             fs.rename(oldpath, newpath, function (err) {
@@ -114,57 +117,78 @@ exports.post_file = async (req, res) => {
 // Fetchfile information based on the bill ID and the user
 exports.get_file = (req, res) => {
 
-    console.log(req);
-    return res.status(200);
+    const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
+    const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
+    const splitIndex = strauth.indexOf(':')                                 // split the index to get emailAdress and password
+    const email_address = strauth.substring(0, splitIndex)
+    const password = strauth.substring(splitIndex + 1)
 
-    // const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
-    // const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
-    // const splitIndex = strauth.indexOf(':')                                 // split the index to get emailAdress and password
-    // const email_address = strauth.substring(0, splitIndex)
-    // const password = strauth.substring(splitIndex + 1)
+    if (!email_address || !password) {
+        return res.status(401).send({ error: true, message: 'Please provide email address or password' });
+    }
 
-    // if (!email_address || !password) {
-    //     return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
-    // }
+    // check if user exists
+    User.findOne({
+        where: {
+            email_address: email_address
+        }
+    }).then((result) => {
+        if (result.length == 0) { // false if author already exists and was not created.
+            return res.status(400).send({ message: "Email does not exists" })
+        }
 
-    // User.findOne({
-    //     where: {
-    //         email_address: email_address
-    //     }
-    // }).then((result) => {
-    //     // console.log(result['password']);
-    //     if (result.length == 0) { // false if author already exists and was not created.
-    //         return res.status(400).send({ message: "Email does not exists" })
-    //     }
+        const pass_result = bcrypt.compareSync(password, result['password']);               // compare the hashed password with password provided
+        if (!pass_result) return res.status(401).send({ message: 'Password not valid!' });
 
-    //     const pass_result = bcrypt.compareSync(password, result['password']);               // compare the hashed password with password provided
-    //     if (!pass_result) return res.status(401).send({ message: 'Password not valid!' });
+        const billId = req.baseUrl.substring(9, 45);
+        const user_id = result['id'];
+        const file_owner = result['email_address'];
 
-    //     const user_id = result['id'];
+        // Find if the bill exists, if not throw an error saying it does not exists
+        Bill.findOne({
+            where: {
+                id: billId
+            }
+        }).then((result) => {
+            if (result.length == 0) {
+                return res.status(400).send({ message: 'Bill not found' })
+            }
 
-    //     Bill.findOne({
-    //         where: {
-    //             id: req.params.id
-    //         }
-    //     }).then((result) => {
-    //         if (result.lenth == 0) {
-    //             return res.status(400).send({ message: 'Bill not found' })
-    //         }
+            // check if the bill is associated with the user
+            Bill.findOne({
+                where: {
+                    id: billId,
+                    owner_id: user_id
+                }
+            }).then((result) => {
+                File.findOne({
+                    where: {
+                        id: req.params.fileId
+                    }
+                }).then((result) => {
+                    // console.log(result.size)
+                    if (result == null) {
+                        return res.status(400).send({ message: 'File info not found' })
+                    }
 
-    //         Bill.findOne({
-    //             where: {
-    //                 id: req.params.id,
-    //                 owner_id: user_id
-    //             }
-    //         }).then((result) => {
-
-    //             res.status(200).send({ id: result['id'], created_ts: result['createdAt'], updated_ts: result['updatedAt'], owner_id: result['owner_id'], vendor: result['vendor'], bill_date: result['bill_date'], due_date: result['due_date'], amount_date: result['amount_due'], categories: result['categories'], paymentStatus: result['paymentStatus'] })
-    //         })
-    //             .catch(err => { return res.status(401).send({ message: 'Bill cannot be seen' }) })
-    //     })
-    //         .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
-    // })
-    //     .catch(err => { return res.status(400).send({ message: 'Email does not exists' }) })
+                    File.findOne({
+                        where: {
+                            id: req.params.fileId,
+                            bill_id: billId,
+                            file_owner: file_owner
+                        }
+                    }).then((result) => {
+                        res.status(200).send({id: result['id'], file_name: result['file_name'], upload_date: result['createdAt'], url: result['url']});
+                    })
+                    .catch((err) => { return res.status(401).send({ message: 'File Info cannot be seen' }) })
+                })
+                .catch((err) => { console.log(err); return res.status(400).send({ message: 'Error finding file info' }) })
+            })
+            .catch(err => { return res.status(401).send({ message: 'Bill cannot be seen' }) })
+        })
+        .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
+    })
+    .catch(err => { console.log(err); return res.status(400).send({ message: 'Email does not exists' }) })
 
 };
 

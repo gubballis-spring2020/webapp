@@ -50,7 +50,7 @@ exports.post_file = async (req, res) => {
             }
         }).then((result) => {
             if (result.lenth == 0) {
-                return res.status(400).send({ message: 'Bill not found' })
+                return res.status(404).send({ message: 'Bill not found' })
             }
 
             // check if the bill is associated with the user
@@ -122,13 +122,13 @@ exports.post_file = async (req, res) => {
                         })
 
                     } else {
-                        return res.status(401).send({ message: 'File type not supported' })
+                        return res.status(400).send({ message: 'File type not supported' })
                     }
                 });
             })
                 .catch(err => { return res.status(401).send({ message: 'Not authorized to attach file to bill' }) })
         })
-            .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
+            .catch(err => { return res.status(404).send({ message: 'Bill not found' }) })
     })
         .catch(err => { console.log(err); return res.status(400).send({ message: 'Email does not exists' }) })
 
@@ -189,7 +189,7 @@ exports.get_file = (req, res) => {
                 }).then((result) => {
                     // console.log(result)
                     if (result == null) {
-                        return res.status(400).send({ message: 'File info not found' })
+                        return res.status(404).send({ message: 'File info not found' })
                     }
 
                     File.findOne({
@@ -205,13 +205,13 @@ exports.get_file = (req, res) => {
 
                         res.status(200).send({ id: result['id'], file_name: result['file_name'], upload_date: result['createdAt'], url: result['url'] });
                     })
-                        .catch((err) => { console.log(err); return res.status(400).send({ message: 'File Info not found' }) })
+                        .catch((err) => { console.log(err); return res.status(404).send({ message: 'File Info not found' }) })
                 })
                     .catch((err) => { console.log(err); return res.status(400).send({ message: 'Error finding file info' }) })
             })
                 .catch(err => { return res.status(401).send({ message: 'Bill cannot be seen' }) })
         })
-            .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
+            .catch(err => { return res.status(404).send({ message: 'Bill not found' }) })
     })
         .catch(err => { console.log(err); return res.status(400).send({ message: 'Email does not exists' }) })
 
@@ -255,7 +255,7 @@ exports.update_file = (req, res) => {
             }
         }).then((result) => {
             if (result.lenth == 0) {
-                return res.status(400).send({ message: 'Bill not found' })
+                return res.status(404).send({ message: 'Bill not found' })
             }
 
             // check if the bill is associated with the user
@@ -276,7 +276,7 @@ exports.update_file = (req, res) => {
                 }).then((result) => {
                     console.log(result)
                     if (result == null) {
-                        return res.status(400).send({ message: 'File info not found' })
+                        return res.status(404).send({ message: 'File info not found' })
                     }
 
                     File.findOne({
@@ -345,7 +345,7 @@ exports.update_file = (req, res) => {
                                     .catch((err) => { return res.status(400).send({ message: "Error updating a file" }) })
                                 
                             } else {
-                                return res.status(401).send({ message: 'File type not supported' })
+                                return res.status(400).send({ message: 'File type not supported' })
                             }
 
 
@@ -358,7 +358,7 @@ exports.update_file = (req, res) => {
             })
                 .catch(err => { return res.status(401).send({ message: 'Not authorized to attach file to bill' }) })
         })
-            .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
+            .catch(err => { return res.status(404).send({ message: 'Bill not found' }) })
     })
         .catch(err => { console.log(err); return res.status(400).send({ message: 'Email does not exists' }) })
 };

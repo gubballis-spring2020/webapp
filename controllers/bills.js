@@ -91,7 +91,7 @@ exports.get_bills = (req, res) => {
             }
         }).then((result) => {
             if (result.lenth == 0) {
-                return res.status(400).send({ message: 'Bill not found' })
+                return res.status(404).send({ message: 'Bill not found' })
             }
 
             Bill.findOne({
@@ -105,7 +105,7 @@ exports.get_bills = (req, res) => {
             })
                 .catch(err => { return res.status(401).send({ message: 'Bill cannot be seen' }) })
         })
-            .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
+            .catch(err => { return res.status(404).send({ message: 'Bill not found' }) })
     })
         .catch(err => { return res.status(400).send({ message: 'Email does not exists' }) })
 
@@ -147,13 +147,13 @@ exports.get_all_bills = (req, res) => {
         }).then((results) => {
 
             if (results.lenth == 0) {
-                return res.status(400).send({ message: 'Bill not found' })
+                return res.status(404).send({ message: 'Bill not found' })
             }
 
             res.status(200).send(results);
 
         })
-            .catch(err => { console.log(err); return res.status(400).send({ message: 'Bill not found' }) })
+            .catch(err => { console.log(err); return res.status(404).send({ message: 'Bill not found' }) })
     })
         .catch(err => { return res.status(400).send({ message: 'Email does not exists' }) })
 };
@@ -201,7 +201,7 @@ exports.update_bill = (req, res) => {
         }).then((result) => {
 
             if (result.lenth == 0) {
-                return res.status(400).send({ message: 'Bill not found' })
+                return res.status(404).send({ message: 'Bill not found' })
             }
 
             Bill.update({
@@ -234,7 +234,7 @@ exports.update_bill = (req, res) => {
             })
             .catch(err => {return res.status(400).send({ message: 'Error updating bill' }) })
         })
-        .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
+        .catch(err => { return res.status(404).send({ message: 'Bill not found' }) })
     })
     .catch (err => { return res.status(400).send({ message: 'Email does not exists' }) })
 };
@@ -278,7 +278,7 @@ exports.delete_bill = (req, res) => {
         }).then((result) => {
 
             if (result.lenth == 0) {
-                return res.status(400).send({ message: 'Bill not found' })
+                return res.status(404).send({ message: 'Bill not found' })
             }
 
             Bill.destroy({
@@ -297,7 +297,7 @@ exports.delete_bill = (req, res) => {
             })
             .catch(err => {console.log(err); return res.status(400).send({ message: 'Error deleting bill' }) })
         })
-        .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
+        .catch(err => { return res.status(404).send({ message: 'Bill not found' }) })
     })
     .catch (err => { return res.status(400).send({ message: 'Email does not exists' }) })
 };

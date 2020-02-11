@@ -182,7 +182,7 @@ exports.get_file = (req, res) => {
                         id: req.params.fileId
                     }
                 }).then((result) => {
-                    // console.log(result.size)
+                    // console.log(result)
                     if (result == null) {
                         return res.status(400).send({ message: 'File info not found' })
                     }
@@ -194,9 +194,13 @@ exports.get_file = (req, res) => {
                             file_owner: file_owner
                         }
                     }).then((result) => {
+                        if (result == null) {
+                            return res.status(401).send({ message: 'File info cannot be seen' })
+                        }
+
                         res.status(200).send({ id: result['id'], file_name: result['file_name'], upload_date: result['createdAt'], url: result['url'] });
                     })
-                        .catch((err) => { return res.status(401).send({ message: 'File Info cannot be seen' }) })
+                        .catch((err) => { console.log(err); return res.status(400).send({ message: 'File Info not found' }) })
                 })
                     .catch((err) => { console.log(err); return res.status(400).send({ message: 'Error finding file info' }) })
             })
@@ -278,8 +282,6 @@ exports.update_file = (req, res) => {
                         }
                     }).then((result) => {
 
-                        console.log(result);
-
                         var file_delete = result['url'];
                         fs.unlinkSync(file_delete, (err) => {
                             if (err) return res.status(400).send({ message: 'Error deleting from folder' })
@@ -317,7 +319,6 @@ exports.update_file = (req, res) => {
                             }).then((result) => {
                                 fs.rename(oldpath, newpath, function (err) {
                                     if (err) throw err;
-                                    res.status(204).send({ message: 'File uploaded' })
                                 });
                                 const fileinfo = "FILE_NAME: " + file_name + "; ID: " + uuid + "; UPLOAD_DATE: " + new Date().toISOString().split('T')[0] + "; URL: " + newpath;
 
@@ -329,9 +330,12 @@ exports.update_file = (req, res) => {
                                         id: billId,
                                         owner_id: user_id
                                     }
-                                }).then()
-                                    .catch((err) => { return res.status(400).send({ message: "Error updating a bill" }) })
+                                }).then(() => {
+                                    res.status(204).send({ message: 'File updated' })
+                                })
+                                .catch((err) => { return res.status(400).send({ message: "Error updating a bill with file" }) })
                             })
+                            .catch((err) => { return res.status(400).send({ message: "Error updating a file" })  })
 
                         })
                     })

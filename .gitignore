@@ -105,3 +105,6 @@ dist
 
 # MYSQL config
 # config/db.config.js
+
+# Uploads folder
+controllers/uploads

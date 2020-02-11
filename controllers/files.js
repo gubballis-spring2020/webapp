@@ -96,14 +96,14 @@ exports.post_file = async (req, res) => {
                         });
 
                         File.findOne({
-                            where : {
+                            where: {
                                 id: uuid
                             }
                         }).then((result) => {
 
                             res.status(201).send({ id: result['id'], file_name: result['file_name'], upload_date: result['createdAt'], url: result['url'] });
-                        
-                        }).catch(err => res.status(400).send({message: 'Error retrieving file info'}));
+
+                        }).catch(err => res.status(400).send({ message: 'Error retrieving file info' }));
 
                         const fileinfo = "FILE_NAME: " + file_name + "; ID: " + uuid + "; UPLOAD_DATE: " + new Date().toISOString().split('T')[0] + "; URL: " + newpath;
 
@@ -279,40 +279,45 @@ exports.update_file = (req, res) => {
                     }).then((result) => {
 
                         console.log(result);
+
+                        var file_delete = result['url'];
+                        fs.unlinkSync(file_delete, (err) => {
+                            if (err) return res.status(400).send({ message: 'Error deleting from folder' })
+                        });
+
+                        File.destroy({
+                            where: {
+                                id: req.params.fileId,
+                                bill_id: billId,
+                                file_owner: file_owner
+                            }
+                        }).then((result) => {
+                            if (result == 0) {
+                                return res.status(401).send({ message: 'File cannot be deleted' })
+                            }
+                        })
+                            .catch(err => { console.log(err); return res.status(400).send({ message: 'Error deleting file' }) })
+
+
                         const form = new formidable.IncomingForm();                     // form to handle upload of file
                         form.parse(req, function (err, fields, files) {
                             var oldpath = files.files.path;
-                            if (!fs.existsSync(dir)) {                                   // check if the uploads directory exists
-                                fs.mkdirSync(dir);
-                            }
-
-                            var file_delete = result['file_name'];
                             var file_name = billId + files.files.name;
                             var newpath = __dirname + "/uploads/" + file_name;
                             const uuid = uuidv4();
 
-                            
+                            File.create({
+                                id: uuid,
+                                bill_id: billId,
+                                file_name: file_name,
+                                url: newpath,
+                                file_owner: file_owner,
+                                size: files.files.size
 
-                            File.findOrCreate({
-                                where: {
-                                    file_name: file_name
-                                },
-                                defaults: {
-                                    id: uuid,
-                                    bill_id: billId,
-                                    file_name: file_name,
-                                    url: newpath,
-                                    file_owner: file_owner,
-                                    size: files.files.size
-                                }
                             }).then((result) => {
-                                if (!result[1]) { // false if user already exists and was not created.
-                                    return res.status(400).send({ message: "File already exists" })
-                                }
-
                                 fs.rename(oldpath, newpath, function (err) {
                                     if (err) throw err;
-                                    res.status(201).send({ message: 'File uploaded' })
+                                    res.status(204).send({ message: 'File uploaded' })
                                 });
                                 const fileinfo = "FILE_NAME: " + file_name + "; ID: " + uuid + "; UPLOAD_DATE: " + new Date().toISOString().split('T')[0] + "; URL: " + newpath;
 
@@ -330,7 +335,7 @@ exports.update_file = (req, res) => {
 
                         })
                     })
-                        .catch((err) => { return res.status(401).send({ message: 'File Info cannot be seen' }) })
+                        .catch((err) => { console.log(err); return res.status(401).send({ message: 'File Info cannot be seen' }) })
                 })
                     .catch((err) => { console.log(err); return res.status(400).send({ message: 'Error finding file info' }) })
 

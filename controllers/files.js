@@ -66,59 +66,64 @@ exports.post_file = async (req, res) => {
 
                 const form = new formidable.IncomingForm();                     // form to handle upload of file
                 form.parse(req, function (err, fields, files) {
-                    var oldpath = files.files.path;
-                    if (!fs.existsSync(dir)) {                                   // check if the uploads directory exists
-                        fs.mkdirSync(dir);
-                    }
-
-                    var file_name = billId + files.files.name;
-                    var newpath = __dirname + "/uploads/" + file_name;
-                    const uuid = uuidv4();
-                    File.findOrCreate({
-                        where: {
-                            file_name: file_name
-                        },
-                        defaults: {
-                            id: uuid,
-                            bill_id: billId,
-                            file_name: file_name,
-                            url: newpath,
-                            file_owner: file_owner,
-                            size: files.files.size
-                        }
-                    }).then((result) => {
-                        if (!result[1]) { // false if user already exists and was not created.
-                            return res.status(400).send({ message: "File already exists" })
+                    var fileType = files.files.type.split('/').pop();
+                    if (fileType == 'jpg' || fileType == 'png' || fileType == 'jpeg' || fileType == 'pdf') {
+                        var oldpath = files.files.path;
+                        if (!fs.existsSync(dir)) {                                   // check if the uploads directory exists
+                            fs.mkdirSync(dir);
                         }
 
-                        fs.rename(oldpath, newpath, function (err) {
-                            if (err) throw err;
-                        });
-
-                        File.findOne({
+                        var file_name = billId + files.files.name;
+                        var newpath = __dirname + "/uploads/" + file_name;
+                        const uuid = uuidv4();
+                        File.findOrCreate({
                             where: {
-                                id: uuid
+                                file_name: file_name
+                            },
+                            defaults: {
+                                id: uuid,
+                                bill_id: billId,
+                                file_name: file_name,
+                                url: newpath,
+                                file_owner: file_owner,
+                                size: files.files.size
                             }
                         }).then((result) => {
-
-                            res.status(201).send({ id: result['id'], file_name: result['file_name'], upload_date: result['createdAt'], url: result['url'] });
-
-                        }).catch(err => res.status(400).send({ message: 'Error retrieving file info' }));
-
-                        const fileinfo = "FILE_NAME: " + file_name + "; ID: " + uuid + "; UPLOAD_DATE: " + new Date().toISOString().split('T')[0] + "; URL: " + newpath;
-
-                        Bill.update({
-                            attachment: fileinfo
-
-                        }, {
-                            where: {
-                                id: billId,
-                                owner_id: user_id
+                            if (!result[1]) { // false if user already exists and was not created.
+                                return res.status(400).send({ message: "File already exists" })
                             }
-                        }).then()
-                            .catch((err) => { return res.status(400).send({ message: "Error updating a bill" }) })
-                    })
 
+                            fs.rename(oldpath, newpath, function (err) {
+                                if (err) throw err;
+                            });
+
+                            File.findOne({
+                                where: {
+                                    id: uuid
+                                }
+                            }).then((result) => {
+
+                                res.status(201).send({ id: result['id'], file_name: result['file_name'], upload_date: result['createdAt'], url: result['url'] });
+
+                            }).catch(err => res.status(400).send({ message: 'Error retrieving file info' }));
+
+                            const fileinfo = "FILE_NAME: " + file_name + "; ID: " + uuid + "; UPLOAD_DATE: " + new Date().toISOString().split('T')[0] + "; URL: " + newpath;
+
+                            Bill.update({
+                                attachment: fileinfo
+
+                            }, {
+                                where: {
+                                    id: billId,
+                                    owner_id: user_id
+                                }
+                            }).then()
+                            // .catch((err) => { return res.status(400).send({ message: "Error updating a bill" }) })
+                        })
+
+                    } else {
+                        return res.status(401).send({ message: 'File type not supported' })
+                    }
                 });
             })
                 .catch(err => { return res.status(401).send({ message: 'Not authorized to attach file to bill' }) })
@@ -263,13 +268,13 @@ exports.update_file = (req, res) => {
                 if (result.length == 0) {
                     return res.status(401).send({ message: 'Not authorized to attach file to bill' })
                 }
-
+                console.log(req.params.fileId)
                 File.findOne({
                     where: {
                         id: req.params.fileId
                     }
                 }).then((result) => {
-                    // console.log(result.size)
+                    console.log(result)
                     if (result == null) {
                         return res.status(400).send({ message: 'File info not found' })
                     }
@@ -303,39 +308,46 @@ exports.update_file = (req, res) => {
 
                         const form = new formidable.IncomingForm();                     // form to handle upload of file
                         form.parse(req, function (err, fields, files) {
-                            var oldpath = files.files.path;
-                            var file_name = billId + files.files.name;
-                            var newpath = __dirname + "/uploads/" + file_name;
-                            const uuid = uuidv4();
+                            var fileType = files.files.type.split('/').pop();
+                            if (fileType == 'jpg' || fileType == 'png' || fileType == 'jpeg' || fileType == 'pdf') {
+                                var oldpath = files.files.path;
+                                var file_name = billId + files.files.name;
+                                var newpath = __dirname + "/uploads/" + file_name;
+                                const uuid = uuidv4();
 
-                            File.create({
-                                id: uuid,
-                                bill_id: billId,
-                                file_name: file_name,
-                                url: newpath,
-                                file_owner: file_owner,
-                                size: files.files.size
+                                File.create({
+                                    id: uuid,
+                                    bill_id: billId,
+                                    file_name: file_name,
+                                    url: newpath,
+                                    file_owner: file_owner,
+                                    size: files.files.size
 
-                            }).then((result) => {
-                                fs.rename(oldpath, newpath, function (err) {
-                                    if (err) throw err;
-                                });
-                                const fileinfo = "FILE_NAME: " + file_name + "; ID: " + uuid + "; UPLOAD_DATE: " + new Date().toISOString().split('T')[0] + "; URL: " + newpath;
+                                }).then((result) => {
+                                    fs.rename(oldpath, newpath, function (err) {
+                                        if (err) throw err;
+                                    });
+                                    const fileinfo = "FILE_NAME: " + file_name + "; ID: " + uuid + "; UPLOAD_DATE: " + new Date().toISOString().split('T')[0] + "; URL: " + newpath;
 
-                                Bill.update({
-                                    attachment: fileinfo
+                                    Bill.update({
+                                        attachment: fileinfo
 
-                                }, {
-                                    where: {
-                                        id: billId,
-                                        owner_id: user_id
-                                    }
-                                }).then(() => {
-                                    res.status(204).send({ message: 'File updated' })
+                                    }, {
+                                        where: {
+                                            id: billId,
+                                            owner_id: user_id
+                                        }
+                                    }).then(() => {
+                                        res.status(204).send({ message: 'File updated' })
+                                    })
+                                        .catch((err) => { return res.status(400).send({ message: "Error updating a bill with file" }) })
                                 })
-                                .catch((err) => { return res.status(400).send({ message: "Error updating a bill with file" }) })
-                            })
-                            .catch((err) => { return res.status(400).send({ message: "Error updating a file" })  })
+                                    .catch((err) => { return res.status(400).send({ message: "Error updating a file" }) })
+                                
+                            } else {
+                                return res.status(401).send({ message: 'File type not supported' })
+                            }
+
 
                         })
                     })

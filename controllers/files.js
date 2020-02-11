@@ -60,56 +60,72 @@ exports.post_file = async (req, res) => {
                     owner_id: user_id
                 }
             }).then((result) => {
+                if (result.length == 0) {
+                    return res.status(401).send({ message: 'Not authorized to attach file to bill' })
+                }
+
                 const form = new formidable.IncomingForm();                     // form to handle upload of file
                 form.parse(req, function (err, fields, files) {
                     var oldpath = files.files.path;
-                    if (!fs.existsSync(dir)){                                   // check if the uploads directory exists
+                    if (!fs.existsSync(dir)) {                                   // check if the uploads directory exists
                         fs.mkdirSync(dir);
                     }
-                    var newpath = __dirname + "/uploads/" + files.files.name;
-                    if(!fs.existsSync(newpath)){
-                        
-                        const uuid = uuidv4();
-                        const fileinfo = "file_name: " + files.files.name + ";id: " + uuid + ";upload_date: " + new Date().toISOString().split('T')[0] + ";url: " + newpath ;
-                        File.create({
+
+                    var file_name = billId + files.files.name;
+                    var newpath = __dirname + "/uploads/" + file_name;
+                    const uuid = uuidv4();
+                    File.findOrCreate({
+                        where: {
+                            file_name: file_name
+                        },
+                        defaults: {
                             id: uuid,
                             bill_id: billId,
-                            file_name: files.files.name,
+                            file_name: file_name,
                             url: newpath,
                             file_owner: file_owner,
                             size: files.files.size
+                        }
+                    }).then((result) => {
+                        if (!result[1]) { // false if user already exists and was not created.
+                            return res.status(400).send({ message: "File already exists" })
+                        }
 
-                        }).then(() => {
-                            fs.rename(oldpath, newpath, function (err) {
-                                if (err) throw err;
-                                res.status(201).send({ message: 'File uploaded' })
-                            });
+                        fs.rename(oldpath, newpath, function (err) {
+                            if (err) throw err;
+                        });
 
-                        })
-                        .catch((err => { return res.status(400).send({ message: 'Error uploading file' }) }))
+                        File.findOne({
+                            where : {
+                                id: uuid
+                            }
+                        }).then((result) => {
+
+                            res.status(201).send({ id: result['id'], file_name: result['file_name'], upload_date: result['createdAt'], url: result['url'] });
+                        
+                        }).catch(err => res.status(400).send({message: 'Error retrieving file info'}));
+
+                        const fileinfo = "FILE_NAME: " + file_name + "; ID: " + uuid + "; UPLOAD_DATE: " + new Date().toISOString().split('T')[0] + "; URL: " + newpath;
 
                         Bill.update({
                             attachment: fileinfo
-                            
-                        },{
+
+                        }, {
                             where: {
                                 id: billId,
                                 owner_id: user_id
                             }
                         }).then()
-                        .catch((err) => { return res.status(400).send({message: "Error updating a bill"})})
-                    }
-                    else {
-                        res.status(400).send({message: 'File already Present'});
-                    }
-                    
+                            .catch((err) => { return res.status(400).send({ message: "Error updating a bill" }) })
+                    })
+
                 });
             })
-            .catch(err => { return res.status(401).send({ message: 'Bill cannot be seen' }) })
+                .catch(err => { return res.status(401).send({ message: 'Not authorized to attach file to bill' }) })
         })
-        .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
+            .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
     })
-    .catch(err => { console.log(err); return res.status(400).send({ message: 'Email does not exists' }) })
+        .catch(err => { console.log(err); return res.status(400).send({ message: 'Email does not exists' }) })
 
 };
 
@@ -178,25 +194,23 @@ exports.get_file = (req, res) => {
                             file_owner: file_owner
                         }
                     }).then((result) => {
-                        res.status(200).send({id: result['id'], file_name: result['file_name'], upload_date: result['createdAt'], url: result['url']});
+                        res.status(200).send({ id: result['id'], file_name: result['file_name'], upload_date: result['createdAt'], url: result['url'] });
                     })
-                    .catch((err) => { return res.status(401).send({ message: 'File Info cannot be seen' }) })
+                        .catch((err) => { return res.status(401).send({ message: 'File Info cannot be seen' }) })
                 })
-                .catch((err) => { console.log(err); return res.status(400).send({ message: 'Error finding file info' }) })
+                    .catch((err) => { console.log(err); return res.status(400).send({ message: 'Error finding file info' }) })
             })
-            .catch(err => { return res.status(401).send({ message: 'Bill cannot be seen' }) })
+                .catch(err => { return res.status(401).send({ message: 'Bill cannot be seen' }) })
         })
-        .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
+            .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
     })
-    .catch(err => { console.log(err); return res.status(400).send({ message: 'Email does not exists' }) })
+        .catch(err => { console.log(err); return res.status(400).send({ message: 'Email does not exists' }) })
 
 };
 
 
 // Update a bill based on the bill ID and user
 exports.update_file = (req, res) => {
-
-    const bill = req.body;
 
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
@@ -205,15 +219,15 @@ exports.update_file = (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
-        return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
+        return res.status(401).send({ error: true, message: 'Please provide email address or password' });
     }
 
+    // check if user exists
     User.findOne({
         where: {
             email_address: email_address
         }
     }).then((result) => {
-        // console.log(result['password']);
         if (result.length == 0) { // false if author already exists and was not created.
             return res.status(400).send({ message: "Email does not exists" })
         }
@@ -221,36 +235,109 @@ exports.update_file = (req, res) => {
         const pass_result = bcrypt.compareSync(password, result['password']);               // compare the hashed password with password provided
         if (!pass_result) return res.status(401).send({ message: 'Password not valid!' });
 
+        const billId = req.baseUrl.substring(9, 45);
         const user_id = result['id'];
-        console.log(user_id);
+        const file_owner = result['email_address']
 
+        // Find if the bill exists, if not throw an error saying it does not exists
         Bill.findOne({
             where: {
-                id: req.params.id
+                id: billId
             }
         }).then((result) => {
-
             if (result.lenth == 0) {
                 return res.status(400).send({ message: 'Bill not found' })
             }
 
-            Bill.destroy({
+            // check if the bill is associated with the user
+            Bill.findOne({
                 where: {
-                    id: req.params.id,
+                    id: billId,
                     owner_id: user_id
                 }
-
             }).then((result) => {
-                console.log(result)
-                if (result == 0) {
-                    return res.status(401).send({ message: 'Bill cannot be deleted' })
+                if (result.length == 0) {
+                    return res.status(401).send({ message: 'Not authorized to attach file to bill' })
                 }
 
-                return res.status(204).send()
+                File.findOne({
+                    where: {
+                        id: req.params.fileId
+                    }
+                }).then((result) => {
+                    // console.log(result.size)
+                    if (result == null) {
+                        return res.status(400).send({ message: 'File info not found' })
+                    }
+
+                    File.findOne({
+                        where: {
+                            id: req.params.fileId,
+                            bill_id: billId,
+                            file_owner: file_owner
+                        }
+                    }).then((result) => {
+
+                        console.log(result);
+                        const form = new formidable.IncomingForm();                     // form to handle upload of file
+                        form.parse(req, function (err, fields, files) {
+                            var oldpath = files.files.path;
+                            if (!fs.existsSync(dir)) {                                   // check if the uploads directory exists
+                                fs.mkdirSync(dir);
+                            }
+
+                            var file_delete = result['file_name'];
+                            var file_name = billId + files.files.name;
+                            var newpath = __dirname + "/uploads/" + file_name;
+                            const uuid = uuidv4();
+
+                            
+
+                            File.findOrCreate({
+                                where: {
+                                    file_name: file_name
+                                },
+                                defaults: {
+                                    id: uuid,
+                                    bill_id: billId,
+                                    file_name: file_name,
+                                    url: newpath,
+                                    file_owner: file_owner,
+                                    size: files.files.size
+                                }
+                            }).then((result) => {
+                                if (!result[1]) { // false if user already exists and was not created.
+                                    return res.status(400).send({ message: "File already exists" })
+                                }
+
+                                fs.rename(oldpath, newpath, function (err) {
+                                    if (err) throw err;
+                                    res.status(201).send({ message: 'File uploaded' })
+                                });
+                                const fileinfo = "FILE_NAME: " + file_name + "; ID: " + uuid + "; UPLOAD_DATE: " + new Date().toISOString().split('T')[0] + "; URL: " + newpath;
+
+                                Bill.update({
+                                    attachment: fileinfo
+
+                                }, {
+                                    where: {
+                                        id: billId,
+                                        owner_id: user_id
+                                    }
+                                }).then()
+                                    .catch((err) => { return res.status(400).send({ message: "Error updating a bill" }) })
+                            })
+
+                        })
+                    })
+                        .catch((err) => { return res.status(401).send({ message: 'File Info cannot be seen' }) })
+                })
+                    .catch((err) => { console.log(err); return res.status(400).send({ message: 'Error finding file info' }) })
+
             })
-                .catch(err => { console.log(err); return res.status(400).send({ message: 'Error deleting bill' }) })
+                .catch(err => { return res.status(401).send({ message: 'Not authorized to attach file to bill' }) })
         })
             .catch(err => { return res.status(400).send({ message: 'Bill not found' }) })
     })
-        .catch(err => { return res.status(400).send({ message: 'Email does not exists' }) })
+        .catch(err => { console.log(err); return res.status(400).send({ message: 'Email does not exists' }) })
 };

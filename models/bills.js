@@ -53,7 +53,7 @@ var Bill = mysqlConnection.define('bills', {
     field: 'paymentStatus' 
   },
   attachment: {
-    type: Sequelize.STRING,
+    type: Sequelize.TEXT,
     allowNull: false,
     field: 'attachment'
   }

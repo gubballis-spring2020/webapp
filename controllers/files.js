@@ -135,7 +135,7 @@ exports.post_file = async (req, res) => {
 };
 
 
-// Fetchfile information based on the bill ID and the user
+// Fetch file information based on the bill ID and the user
 exports.get_file = (req, res) => {
 
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
@@ -218,8 +218,155 @@ exports.get_file = (req, res) => {
 };
 
 
-// Update a bill based on the bill ID and user
+// Update a file based on the file ID and user
 exports.update_file = (req, res) => {
+
+    const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
+    const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
+    const splitIndex = strauth.indexOf(':')                                 // split the index to get emailAdress and password
+    const email_address = strauth.substring(0, splitIndex)
+    const password = strauth.substring(splitIndex + 1)
+
+    if (!email_address || !password) {
+        return res.status(401).send({ error: true, message: 'Please provide email address or password' });
+    }
+
+    // check if user exists
+    User.findOne({
+        where: {
+            email_address: email_address
+        }
+    }).then((result) => {
+        if (result.length == 0) { // false if author already exists and was not created.
+            return res.status(400).send({ message: "Email does not exists" })
+        }
+
+        const pass_result = bcrypt.compareSync(password, result['password']);               // compare the hashed password with password provided
+        if (!pass_result) return res.status(401).send({ message: 'Password not valid!' });
+
+        const billId = req.baseUrl.substring(9, 45);
+        const user_id = result['id'];
+        const file_owner = result['email_address']
+
+        // Find if the bill exists, if not throw an error saying it does not exists
+        Bill.findOne({
+            where: {
+                id: billId
+            }
+        }).then((result) => {
+            if (result.lenth == 0) {
+                return res.status(404).send({ message: 'Bill not found' })
+            }
+
+            // check if the bill is associated with the user
+            Bill.findOne({
+                where: {
+                    id: billId,
+                    owner_id: user_id
+                }
+            }).then((result) => {
+                if (result.length == 0) {
+                    return res.status(401).send({ message: 'Not authorized to attach file to bill' })
+                }
+                console.log(req.params.fileId)
+                File.findOne({
+                    where: {
+                        id: req.params.fileId
+                    }
+                }).then((result) => {
+                    console.log(result)
+                    if (result == null) {
+                        return res.status(404).send({ message: 'File info not found' })
+                    }
+
+                    File.findOne({
+                        where: {
+                            id: req.params.fileId,
+                            bill_id: billId,
+                            file_owner: file_owner
+                        }
+                    }).then((result) => {
+
+                        var file_delete = result['url'];
+                        fs.unlinkSync(file_delete, (err) => {
+                            if (err) return res.status(400).send({ message: 'Error Updating from folder' })
+                        });
+
+                        File.destroy({
+                            where: {
+                                id: req.params.fileId,
+                                bill_id: billId,
+                                file_owner: file_owner
+                            }
+                        }).then((result) => {
+                            if (result == 0) {
+                                return res.status(401).send({ message: 'File cannot be updated' })
+                            }
+                        })
+                            .catch(err => { console.log(err); return res.status(400).send({ message: 'Error updating file' }) })
+
+
+                        const form = new formidable.IncomingForm();                     // form to handle upload of file
+                        form.parse(req, function (err, fields, files) {
+                            var fileType = files.files.type.split('/').pop();
+                            if (fileType == 'jpg' || fileType == 'png' || fileType == 'jpeg' || fileType == 'pdf') {
+                                var oldpath = files.files.path;
+                                var file_name = billId + files.files.name;
+                                var newpath = __dirname + "/uploads/" + file_name;
+                                const uuid = uuidv4();
+
+                                File.create({
+                                    id: uuid,
+                                    bill_id: billId,
+                                    file_name: file_name,
+                                    url: newpath,
+                                    file_owner: file_owner,
+                                    size: files.files.size
+
+                                }).then((result) => {
+                                    fs.rename(oldpath, newpath, function (err) {
+                                        if (err) throw err;
+                                    });
+                                    const fileinfo = "FILE_NAME: " + file_name + "; ID: " + uuid + "; UPLOAD_DATE: " + new Date().toISOString().split('T')[0] + "; URL: " + newpath;
+
+                                    Bill.update({
+                                        attachment: fileinfo
+
+                                    }, {
+                                        where: {
+                                            id: billId,
+                                            owner_id: user_id
+                                        }
+                                    }).then(() => {
+                                        res.status(204).send({ message: 'File updated' })
+                                    })
+                                        .catch((err) => { return res.status(400).send({ message: "Error updating a bill with file" }) })
+                                })
+                                    .catch((err) => { return res.status(400).send({ message: "Error updating a file" }) })
+                                
+                            } else {
+                                return res.status(400).send({ message: 'File type not supported' })
+                            }
+
+
+                        })
+                    })
+                        .catch((err) => { console.log(err); return res.status(401).send({ message: 'File Info cannot be seen' }) })
+                })
+                    .catch((err) => { console.log(err); return res.status(400).send({ message: 'Error finding file info' }) })
+
+            })
+                .catch(err => { return res.status(401).send({ message: 'Not authorized to attach file to bill' }) })
+        })
+            .catch(err => { return res.status(404).send({ message: 'Bill not found' }) })
+    })
+        .catch(err => { console.log(err); return res.status(400).send({ message: 'Email does not exists' }) })
+};
+
+
+
+// Delete a file based on the file ID and user
+exports.delete_file = (req, res) => {
 
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
@@ -302,54 +449,11 @@ exports.update_file = (req, res) => {
                             if (result == 0) {
                                 return res.status(401).send({ message: 'File cannot be deleted' })
                             }
+
+                            return res.status(204).send({ message: 'File deleted' })
                         })
                             .catch(err => { console.log(err); return res.status(400).send({ message: 'Error deleting file' }) })
 
-
-                        const form = new formidable.IncomingForm();                     // form to handle upload of file
-                        form.parse(req, function (err, fields, files) {
-                            var fileType = files.files.type.split('/').pop();
-                            if (fileType == 'jpg' || fileType == 'png' || fileType == 'jpeg' || fileType == 'pdf') {
-                                var oldpath = files.files.path;
-                                var file_name = billId + files.files.name;
-                                var newpath = __dirname + "/uploads/" + file_name;
-                                const uuid = uuidv4();
-
-                                File.create({
-                                    id: uuid,
-                                    bill_id: billId,
-                                    file_name: file_name,
-                                    url: newpath,
-                                    file_owner: file_owner,
-                                    size: files.files.size
-
-                                }).then((result) => {
-                                    fs.rename(oldpath, newpath, function (err) {
-                                        if (err) throw err;
-                                    });
-                                    const fileinfo = "FILE_NAME: " + file_name + "; ID: " + uuid + "; UPLOAD_DATE: " + new Date().toISOString().split('T')[0] + "; URL: " + newpath;
-
-                                    Bill.update({
-                                        attachment: fileinfo
-
-                                    }, {
-                                        where: {
-                                            id: billId,
-                                            owner_id: user_id
-                                        }
-                                    }).then(() => {
-                                        res.status(204).send({ message: 'File updated' })
-                                    })
-                                        .catch((err) => { return res.status(400).send({ message: "Error updating a bill with file" }) })
-                                })
-                                    .catch((err) => { return res.status(400).send({ message: "Error updating a file" }) })
-                                
-                            } else {
-                                return res.status(400).send({ message: 'File type not supported' })
-                            }
-
-
-                        })
                     })
                         .catch((err) => { console.log(err); return res.status(401).send({ message: 'File Info cannot be seen' }) })
                 })

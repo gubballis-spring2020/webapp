@@ -4,14 +4,16 @@ const User = require("../models/user");
 const File = require("../models/file");
 const uuidv4 = require('uuid/v4');
 var fs = require('fs');
-var dir = __dirname + "/uploads/";
+
+// AWS S3 connection
+const AWS = require('aws-sdk');
+var s3 = new AWS.S3();
 
 // Using bcrypt to hash the password and store in the databse
 const bcrypt = require("bcrypt");
 
 // middleare to stroe files on the server
 const formidable = require('formidable');
-
 
 // Post a bill for a user
 exports.post_file = async (req, res) => {
@@ -69,12 +71,14 @@ exports.post_file = async (req, res) => {
                     var fileType = files.files.type.split('/').pop();
                     if (fileType == 'jpg' || fileType == 'png' || fileType == 'jpeg' || fileType == 'pdf') {
                         var oldpath = files.files.path;
-                        if (!fs.existsSync(dir)) {                                   // check if the uploads directory exists
-                            fs.mkdirSync(dir);
-                        }
+                        // if (!fs.existsSync(dir)) {                                   // check if the uploads directory exists
+                        //     fs.mkdirSync(dir);
+                        // }
 
+                        
                         var file_name = billId + files.files.name;
-                        var newpath = __dirname + "/uploads/" + file_name;
+                        var newpath = process.env.S3_BUCKET + "/"+ file_name;
+                        console.log(file_name);
                         const uuid = uuidv4();
                         File.findOrCreate({
                             where: {
@@ -93,9 +97,22 @@ exports.post_file = async (req, res) => {
                                 return res.status(400).send({ message: "File already exists" })
                             }
 
-                            fs.rename(oldpath, newpath, function (err) {
-                                if (err) throw err;
+                            const params = {
+                                Bucket: process.env.S3_BUCKET,
+                                Key: file_name,
+                                Body: "JSON.stringify(data, null, 2)"
+                            };
+
+                            s3.upload(params, err => {
+                                if(err){
+                                    console.log(err);
+                                }
                             });
+
+                            // Old upload
+                            // fs.rename(oldpath, newpath, function (err) {
+                            //     if (err) throw err;
+                            // });
 
                             File.findOne({
                                 where: {
@@ -287,10 +304,23 @@ exports.update_file = (req, res) => {
                         }
                     }).then((result) => {
 
-                        var file_delete = result['url'];
-                        fs.unlinkSync(file_delete, (err) => {
-                            if (err) return res.status(400).send({ message: 'Error Updating from folder' })
+                        var file_delete = result['url'].split('/')[1];
+
+                        const params = {
+                            Bucket: process.env.S3_BUCKET,
+                            Key: file_delete
+                        };
+
+                        s3.deleteObject(params, err => {
+                            if(err){
+                                console.log(err);
+                            }
                         });
+
+                        // Old upload
+                        // fs.unlinkSync(file_delete, (err) => {
+                        //     if (err) return res.status(400).send({ message: 'Error Updating from folder' })
+                        // });
 
                         File.destroy({
                             where: {
@@ -312,7 +342,7 @@ exports.update_file = (req, res) => {
                             if (fileType == 'jpg' || fileType == 'png' || fileType == 'jpeg' || fileType == 'pdf') {
                                 var oldpath = files.files.path;
                                 var file_name = billId + files.files.name;
-                                var newpath = __dirname + "/uploads/" + file_name;
+                                var newpath = process.env.S3_BUCKET + "/"+ file_name;
                                 const uuid = uuidv4();
 
                                 File.create({
@@ -324,9 +354,22 @@ exports.update_file = (req, res) => {
                                     size: files.files.size
 
                                 }).then((result) => {
-                                    fs.rename(oldpath, newpath, function (err) {
-                                        if (err) throw err;
+                                    // Old upload
+                                    // fs.rename(oldpath, newpath, function (err) {
+                                    //     if (err) throw err;
+                                    // });
+                                    const params = {
+                                        Bucket: process.env.S3_BUCKET,
+                                        Key: file_name,
+                                        Body: "JSON.stringify(data, null, 2)"
+                                    };
+        
+                                    s3.upload(params, err => {
+                                        if(err){
+                                            console.log(err);
+                                        }
                                     });
+
                                     const fileinfo = "FILE_NAME: " + file_name + "; ID: " + uuid + "; UPLOAD_DATE: " + new Date().toISOString().split('T')[0] + "; URL: " + newpath;
 
                                     Bill.update({
@@ -343,7 +386,7 @@ exports.update_file = (req, res) => {
                                         .catch((err) => { return res.status(400).send({ message: "Error updating a bill with file" }) })
                                 })
                                     .catch((err) => { return res.status(400).send({ message: "Error updating a file" }) })
-                                
+
                             } else {
                                 return res.status(400).send({ message: 'File type not supported' })
                             }
@@ -434,25 +477,41 @@ exports.delete_file = (req, res) => {
                         }
                     }).then((result) => {
 
-                        var file_delete = result['url'];
-                        fs.unlinkSync(file_delete, (err) => {
-                            if (err) return res.status(400).send({ message: 'Error deleting from folder' })
+                        // Old upload
+                        // var file_delete = result['url'];
+                        // fs.unlinkSync(file_delete, (err) => {
+                        //     if (err) return res.status(400).send({ message: 'Error deleting from folder' })
+                        // });
+
+
+                        var file_delete = result['url'].split('/')[1];
+                        console.log(file_delete);
+
+                        const params = {
+                            Bucket: process.env.S3_BUCKET,
+                            Key: file_delete
+                        };
+
+                        s3.deleteObject(params, err => {
+                            if(err){
+                                console.log(err);
+                            }
+
+                            File.destroy({
+                                where: {
+                                    id: req.params.fileId,
+                                    bill_id: billId,
+                                    file_owner: file_owner
+                                }
+                            }).then((result) => {
+                                if (result == 0) {
+                                    return res.status(401).send({ message: 'File cannot be deleted' })
+                                }
+    
+                                return res.status(204).send({ message: 'File deleted' })
+                            })
+                                .catch(err => { console.log(err); return res.status(400).send({ message: 'Error deleting file' }) })
                         });
-
-                        File.destroy({
-                            where: {
-                                id: req.params.fileId,
-                                bill_id: billId,
-                                file_owner: file_owner
-                            }
-                        }).then((result) => {
-                            if (result == 0) {
-                                return res.status(401).send({ message: 'File cannot be deleted' })
-                            }
-
-                            return res.status(204).send({ message: 'File deleted' })
-                        })
-                            .catch(err => { console.log(err); return res.status(400).send({ message: 'Error deleting file' }) })
 
                     })
                         .catch((err) => { console.log(err); return res.status(401).send({ message: 'File Info cannot be seen' }) })

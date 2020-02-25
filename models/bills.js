@@ -60,6 +60,14 @@ var Bill = mysqlConnection.define('bills', {
 }, {
   freezeTableName: true // Model tableName will be the same as the model name
 
+},
+{
+  indexes:[
+   {
+     unique: true,
+     fields:['id']
+   }
+  ]
 });
 
 // Create the table if it does not exist

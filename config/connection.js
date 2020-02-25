@@ -2,25 +2,12 @@ const mysql = require('mysql');
 const dbConfig = require('./db.config');
 const Sequelize = require('sequelize');
 
-require('dotenv').config();
+require('dotenv').config({path : "/home/srikanth/Desktop/Cloud/assignments/.env"});
 
-// var mysqlConnection = mysql.createConnection({
+// require('dotenv').config({path : "/home/ubuntu/.env"});
 
-//     // host: process.env.DB_HOST,
-//     // port: process.env.DB_PORT,
-//     // user: process.env.DB_USER,
-//     // password: process.env.DB_PASSWORD,
-//     // database: process.env.DB_NAME,
-
-//     host: dbConfig.HOST,
-//     user: dbConfig.USER,
-//     password: dbConfig.PASSWORD,
-//     database: dbConfig.DB
-    
-// });
-
-mysqlConnection =  new Sequelize(dbConfig.DATABASE , dbConfig.USER, dbConfig.PASSWORD, {
-    host: 'localhost',
+mysqlConnection =  new Sequelize(process.env.DB_NAME , process.env.DB_USER, process.env.DB_PASSWORD, {
+    host: process.env.DB_HOST,
     dialect: 'mysql',
     operatorsAliases: false,
   
@@ -31,6 +18,8 @@ mysqlConnection =  new Sequelize(dbConfig.DATABASE , dbConfig.USER, dbConfig.PAS
       idle: 10000
     },
   });
+
+  mysqlConnection.query("CREATE DATABASE IF NOT EXISTS `csye6225`;").then(() => console.log("Database created!")).catch((err) => {console.log("Error in database creation")})
 
   mysqlConnection.authenticate()
                  .then(() => console.log('Connected'))

@@ -36,6 +36,14 @@ var Files = mysqlConnection.define('files', {
   freezeTableName: true, // Model tableName will be the same as the model name
   updatedAt: false
 
+},
+{
+  indexes:[
+   {
+     unique: true,
+     fields:['id']
+   }
+  ]
 });
 
 // Create the table if it does not exist

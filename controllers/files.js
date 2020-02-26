@@ -77,7 +77,7 @@ exports.post_file = async (req, res) => {
 
                         
                         var file_name = billId + files.files.name;
-                        var newpath = process.env.S3_BUCKET + "/"+ file_name;
+                        var newpath = process.env.S3_BUCKET_URL + "/"+ file_name;
                         console.log(file_name);
                         const uuid = uuidv4();
                         File.findOrCreate({
@@ -342,7 +342,7 @@ exports.update_file = (req, res) => {
                             if (fileType == 'jpg' || fileType == 'png' || fileType == 'jpeg' || fileType == 'pdf') {
                                 var oldpath = files.files.path;
                                 var file_name = billId + files.files.name;
-                                var newpath = process.env.S3_BUCKET + "/"+ file_name;
+                                var newpath = process.env.S3_BUCKET_URL + "/"+ file_name;
                                 const uuid = uuidv4();
 
                                 File.create({
@@ -484,7 +484,7 @@ exports.delete_file = (req, res) => {
                         // });
 
 
-                        var file_delete = result['url'].split('/')[1];
+                        var file_delete = result['url'].split('/')[3];
                         console.log(file_delete);
 
                         const params = {

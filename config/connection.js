@@ -1,10 +1,9 @@
 const mysql = require('mysql');
 const dbConfig = require('./db.config');
 const Sequelize = require('sequelize');
+var envpath = process.env.HOME;
 
-require('dotenv').config({path : "/home/srikanth/Desktop/Cloud/assignments/.env"});
-
-// require('dotenv').config({path : "/home/ubuntu/.env"});
+require('dotenv').config({path : envpath + "/.env"});
 
 mysqlConnection =  new Sequelize(process.env.DB_NAME , process.env.DB_USER, process.env.DB_PASSWORD, {
     host: process.env.DB_HOST,

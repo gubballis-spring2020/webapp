@@ -4,6 +4,7 @@ const User = require("../models/user");
 const File = require("../models/file");
 const uuidv4 = require('uuid/v4');
 var fs = require('fs');
+var dir = __dirname + "/uploads/";
 
 // AWS S3 connection
 const AWS = require('aws-sdk');
@@ -71,13 +72,19 @@ exports.post_file = async (req, res) => {
                     var fileType = files.files.type.split('/').pop();
                     if (fileType == 'jpg' || fileType == 'png' || fileType == 'jpeg' || fileType == 'pdf') {
                         var oldpath = files.files.path;
-                        // if (!fs.existsSync(dir)) {                                   // check if the uploads directory exists
-                        //     fs.mkdirSync(dir);
-                        // }
 
-                        
+
                         var file_name = billId + files.files.name;
-                        var newpath = process.env.S3_BUCKET_URL + "/"+ file_name;
+                        if (process.env.DB_HOST == "localhost") {
+                            if (!fs.existsSync(dir)) {                                   // check if the uploads directory exists
+                                fs.mkdirSync(dir);
+                            }
+                            var newpath = __dirname + "/uploads/" + file_name;
+                        }
+                        else {
+                            var newpath = process.env.S3_BUCKET_URL + "/" + file_name;
+                        }
+
                         console.log(file_name);
                         const uuid = uuidv4();
                         File.findOrCreate({
@@ -97,22 +104,26 @@ exports.post_file = async (req, res) => {
                                 return res.status(400).send({ message: "File already exists" })
                             }
 
-                            const params = {
-                                Bucket: process.env.S3_BUCKET,
-                                Key: file_name,
-                                Body: "JSON.stringify(data, null, 2)"
-                            };
+                            if (process.env.DB_HOST == "localhost") {
+                                // Old upload
+                                fs.rename(oldpath, newpath, function (err) {
+                                    if (err) throw err;
+                                });
+                            }
+                            else {
+                                const params = {
+                                    Bucket: process.env.S3_BUCKET,
+                                    Key: file_name,
+                                    Body: "JSON.stringify(data, null, 2)"
+                                };
 
-                            s3.upload(params, err => {
-                                if(err){
-                                    console.log(err);
-                                }
-                            });
+                                s3.upload(params, err => {
+                                    if (err) {
+                                        console.log(err);
+                                    }
+                                });
+                            }
 
-                            // Old upload
-                            // fs.rename(oldpath, newpath, function (err) {
-                            //     if (err) throw err;
-                            // });
 
                             File.findOne({
                                 where: {
@@ -303,24 +314,26 @@ exports.update_file = (req, res) => {
                             file_owner: file_owner
                         }
                     }).then((result) => {
+                        if (process.env.DB_HOST == "localhost") {
+                            // Old upload
+                            var file_delete = result['url'];
+                            fs.unlinkSync(file_delete, (err) => {
+                                if (err) return res.status(400).send({ message: 'Error deleting from folder' })
+                            });
+                        }
+                        else {
+                            var file_delete = result['url'].split('/')[3];
+                            const params = {
+                                Bucket: process.env.S3_BUCKET,
+                                Key: file_delete
+                            };
 
-                        var file_delete = result['url'].split('/')[1];
-
-                        const params = {
-                            Bucket: process.env.S3_BUCKET,
-                            Key: file_delete
-                        };
-
-                        s3.deleteObject(params, err => {
-                            if(err){
-                                console.log(err);
-                            }
-                        });
-
-                        // Old upload
-                        // fs.unlinkSync(file_delete, (err) => {
-                        //     if (err) return res.status(400).send({ message: 'Error Updating from folder' })
-                        // });
+                            s3.deleteObject(params, err => {
+                                if (err) {
+                                    console.log(err);
+                                }
+                            });
+                        }
 
                         File.destroy({
                             where: {
@@ -332,8 +345,9 @@ exports.update_file = (req, res) => {
                             if (result == 0) {
                                 return res.status(401).send({ message: 'File cannot be updated' })
                             }
+
                         })
-                            .catch(err => { console.log(err); return res.status(400).send({ message: 'Error updating file' }) })
+                        .catch(err => { console.log(err); return res.status(400).send({ message: 'Error updating file' }) })
 
 
                         const form = new formidable.IncomingForm();                     // form to handle upload of file
@@ -342,8 +356,15 @@ exports.update_file = (req, res) => {
                             if (fileType == 'jpg' || fileType == 'png' || fileType == 'jpeg' || fileType == 'pdf') {
                                 var oldpath = files.files.path;
                                 var file_name = billId + files.files.name;
-                                var newpath = process.env.S3_BUCKET_URL + "/"+ file_name;
                                 const uuid = uuidv4();
+
+                                if (process.env.DB_HOST == "localhost") {
+                                    // Old upload
+                                    var newpath = __dirname + "/uploads/" + file_name;
+                                }
+                                else {
+                                    var newpath = process.env.S3_BUCKET_URL + "/" + file_name;
+                                }
 
                                 File.create({
                                     id: uuid,
@@ -354,21 +375,26 @@ exports.update_file = (req, res) => {
                                     size: files.files.size
 
                                 }).then((result) => {
-                                    // Old upload
-                                    // fs.rename(oldpath, newpath, function (err) {
-                                    //     if (err) throw err;
-                                    // });
-                                    const params = {
-                                        Bucket: process.env.S3_BUCKET,
-                                        Key: file_name,
-                                        Body: "JSON.stringify(data, null, 2)"
-                                    };
-        
-                                    s3.upload(params, err => {
-                                        if(err){
-                                            console.log(err);
-                                        }
-                                    });
+                                    if (process.env.DB_HOST == "localhost") {
+                                        // Old upload
+                                        fs.rename(oldpath, newpath, function (err) {
+                                            if (err) throw err;
+                                        });
+                                    }
+                                    else {
+                                        const params = {
+                                            Bucket: process.env.S3_BUCKET,
+                                            Key: file_name,
+                                            Body: "JSON.stringify(data, null, 2)"
+                                        };
+
+                                        s3.upload(params, err => {
+                                            if (err) {
+                                                console.log(err);
+                                            }
+                                        });
+
+                                    }
 
                                     const fileinfo = "FILE_NAME: " + file_name + "; ID: " + uuid + "; UPLOAD_DATE: " + new Date().toISOString().split('T')[0] + "; URL: " + newpath;
 
@@ -476,42 +502,42 @@ exports.delete_file = (req, res) => {
                             file_owner: file_owner
                         }
                     }).then((result) => {
+                        if (process.env.DB_HOST == "localhost") {
+                            // Old upload
+                            var file_delete = result['url'];
+                            fs.unlinkSync(file_delete, (err) => {
+                                if (err) return res.status(400).send({ message: 'Error deleting from folder' })
+                            });
+                        }
+                        else {
+                            var file_delete = result['url'].split('/')[3];
+                            const params = {
+                                Bucket: process.env.S3_BUCKET,
+                                Key: file_delete
+                            };
 
-                        // Old upload
-                        // var file_delete = result['url'];
-                        // fs.unlinkSync(file_delete, (err) => {
-                        //     if (err) return res.status(400).send({ message: 'Error deleting from folder' })
-                        // });
+                            s3.deleteObject(params, err => {
+                                if (err) {
+                                    console.log(err);
+                                }
+                            });
+                        }    
 
-
-                        var file_delete = result['url'].split('/')[3];
-                        console.log(file_delete);
-
-                        const params = {
-                            Bucket: process.env.S3_BUCKET,
-                            Key: file_delete
-                        };
-
-                        s3.deleteObject(params, err => {
-                            if(err){
-                                console.log(err);
+                        File.destroy({
+                            where: {
+                                id: req.params.fileId,
+                                bill_id: billId,
+                                file_owner: file_owner
+                            }
+                        }).then((result) => {
+                            if (result == 0) {
+                                return res.status(401).send({ message: 'File cannot be deleted' })
                             }
 
-                            File.destroy({
-                                where: {
-                                    id: req.params.fileId,
-                                    bill_id: billId,
-                                    file_owner: file_owner
-                                }
-                            }).then((result) => {
-                                if (result == 0) {
-                                    return res.status(401).send({ message: 'File cannot be deleted' })
-                                }
-    
-                                return res.status(204).send({ message: 'File deleted' })
-                            })
-                                .catch(err => { console.log(err); return res.status(400).send({ message: 'Error deleting file' }) })
-                        });
+
+                            return res.status(204).send({ message: 'File deleted' })
+                        })
+                            .catch(err => { console.log(err); return res.status(400).send({ message: 'Error deleting file' }) })
 
                     })
                         .catch((err) => { console.log(err); return res.status(401).send({ message: 'File Info cannot be seen' }) })

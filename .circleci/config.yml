@@ -6,10 +6,22 @@ jobs:
       - image: circleci/mysql:5.7
         environment:
           MYSQL_ROOT_PASSWORD: parasites
-          MYSQL_DATABASE: CSYE6225
+          MYSQL_DATABASE: csye6225
 
     steps:
       - checkout
+      - run:
+          name: Install aws cli in the container
+          command: |
+            pwd
+            ls -la
+            sudo apt-get update
+            sudo apt-get install curl -y
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            sudo apt-get install unzip -y
+            unzip awscliv2.zip
+            sudo ./aws/install
+            aws --version
       - run:
           name: Set up env parameters for node app
           command: |
@@ -20,6 +32,7 @@ jobs:
             echo 'DB_USER="root"' >> .env
             echo 'DB_PASSWORD="parasites"' >> .env
             echo 'DB_NAME="csye6225"' >> .env
+
       # Install node packages
       - run: npm install
       
@@ -52,10 +65,33 @@ jobs:
       - image: circleci/mysql:5.7
         environment:
           MYSQL_ROOT_PASSWORD: parasites
-          MYSQL_DATABASE: CSYE6225
+          MYSQL_DATABASE: csye6225
 
     steps:
       - checkout
+      - run:
+          name: Install aws cli in the container
+          command: |
+            pwd
+            ls -la
+            sudo apt-get update
+            sudo apt-get install curl -y
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            sudo apt-get install unzip -y
+            unzip awscliv2.zip
+            sudo ./aws/install
+            aws --version
+      - run:
+          name: Set up env parameters for node app
+          command: |
+            cd ~/
+            pwd
+            touch .env
+            echo 'DB_HOST="localhost"' >> .env
+            echo 'DB_USER="root"' >> .env
+            echo 'DB_PASSWORD="parasites"' >> .env
+            echo 'DB_NAME="csye6225"' >> .env
+            
       # Install node packages
       - run: npm install
       

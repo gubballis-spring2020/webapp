@@ -10,9 +10,16 @@ jobs:
 
     steps:
       - checkout
-      - run: |
-          ls -la ~/
-          pwd
+      - run:
+          name: Set up env parameters for node app
+          command: |
+            cd ~/
+            pwd
+            touch .env
+            echo 'DB_HOST="localhost"' >> .env
+            echo 'DB_USER="root"' >> .env
+            echo 'DB_PASSWORD="parasites"' >> .env
+            echo 'DB_NAME="csye6225"' >> .env
       # Install node packages
       - run: npm install
       

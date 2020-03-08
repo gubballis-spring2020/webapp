@@ -117,6 +117,35 @@ jobs:
           name: Tests run
           command: |
             npm test
+
+      - run:
+          name: Build and Zip Artifact
+          command: |
+            echo "Hello the current build number is ${CIRCLE_BUILD_NUM}"
+            pwd
+            ls -al
+            mkdir -p codedeploy_artifact
+            tar -czvf webapp.tar.gz webapp/
+            mv csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz codedeploy_artifact
+            ls -al
+            cd ..
+            echo "................"  
+
+       - run:
+          name: Upload Artifact to S3
+          command: |
+            pwd
+            ls -al
+            cd codedeploy_artifact
+            aws configure list
+            aws s3 cp csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz s3://${s3bucket}
+      
+      - run:
+          name: Make CodeDeploy API call
+          command: |
+            echo "Hello CodeDeploy"
+            echo "Testing" 
+            aws deploy create-deployment --region us-east-1 --application-name csye6225-webapp --deployment-group csye6225-webapp-deployment --s3-location bucket=${s3bucket},key=csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz,bundleType=tgz
             
 
 workflows:

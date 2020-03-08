@@ -82,6 +82,12 @@ jobs:
             unzip awscliv2.zip
             sudo ./aws/install
             aws --version
+      -run:
+          name: Configure aws cli
+          command: |
+            export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+            export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+            export AWS_DEFAULT_REGION=us-east-1
       - run:
           name: Set up env parameters for node app
           command: |
@@ -125,6 +131,7 @@ jobs:
             echo "Hello the current build number is ${CIRCLE_BUILD_NUM}"
             pwd
             ls -al
+            rm -rf node_modules/
             mkdir -p codedeploy_artifact
             cd ..
             tar -czvf csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz webapp/

@@ -148,6 +148,14 @@ jobs:
             cd codedeploy_artifact
             aws configure list
             aws s3 cp csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz s3://${s3bucket}
+
+      - run:
+          name: Make CodeDeploy API call
+          command: |
+            echo "Hello CodeDeploy"
+            echo "Testing" 
+            aws deploy create-deployment --region us-east-1 --application-name csye6225-webapp --deployment-group csye6225-webapp-deployment --s3-location bucket=${s3bucket},key=csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz,bundleType=tgz
+            
       
 workflows:
   version: 2

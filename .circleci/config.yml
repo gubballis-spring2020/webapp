@@ -82,7 +82,7 @@ jobs:
             unzip awscliv2.zip
             sudo ./aws/install
             aws --version
-      -run:
+      - run:
           name: Configure aws cli
           command: |
             export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}

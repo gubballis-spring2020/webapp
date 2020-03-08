@@ -132,6 +132,15 @@ jobs:
             cd webapp/codedeploy_artifact/
             pwd
             ls -al
+
+      - run:
+          name: Upload Artifact to S3
+          command: |
+            pwd
+            ls -al
+            cd codedeploy_artifact
+            aws configure list
+            aws s3 cp csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz s3://${s3bucket}
       
 workflows:
   version: 2

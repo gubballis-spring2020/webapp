@@ -60,6 +60,7 @@ jobs:
             npm test
 
   build:
+    working_directory: ~/webapp
     docker:
       - image: circleci/node:8.10.0
       - image: circleci/mysql:5.7
@@ -130,7 +131,7 @@ jobs:
             ls -al
             cd ..
             echo "................" 
-            
+
 workflows:
   version: 2
   pr-check-workflow:

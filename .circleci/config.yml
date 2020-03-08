@@ -118,6 +118,19 @@ jobs:
           command: |
             npm test
             
+      - run:
+          name: Build and Zip Artifact
+          command: |
+            echo "Hello the current build number is ${CIRCLE_BUILD_NUM}"
+            pwd
+            ls -al
+            mkdir -p codedeploy_artifact
+            tar -czvf webapp.tar.gz webapp/
+            mv csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz codedeploy_artifact
+            ls -al
+            cd ..
+            echo "................" 
+            
 workflows:
   version: 2
   pr-check-workflow:

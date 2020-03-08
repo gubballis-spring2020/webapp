@@ -126,8 +126,9 @@ jobs:
             pwd
             ls -al
             mkdir -p codedeploy_artifact
-            tar -czvf webapp.tar.gz webapp/
-            mv csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz codedeploy_artifact
+            cd ..
+            tar -czvf csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz webapp/
+            mv csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz webapp/codedeploy_artifact/
             ls -al
             cd ..
             echo "................" 

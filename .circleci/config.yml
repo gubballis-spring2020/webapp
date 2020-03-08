@@ -129,10 +129,10 @@ jobs:
             cd ..
             tar -czvf csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz webapp/
             mv csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz webapp/codedeploy_artifact/
+            cd webapp/codedeploy_artifact/
+            pwd
             ls -al
-            cd ..
-            echo "................" 
-
+      
 workflows:
   version: 2
   pr-check-workflow:

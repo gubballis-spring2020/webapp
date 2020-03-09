@@ -154,7 +154,7 @@ jobs:
           command: |
             echo "Hello CodeDeploy"
             echo "Testing" 
-            aws deploy create-deployment --region us-east-1 --application-name csye6225-webapp --deployment-group-name csye6225-webapp-deployment --s3-location bucket=${s3bucket},key=csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz,bundleType=tgz
+            aws deploy create-deployment --no-verify-ssl --region us-east-1 --application-name csye6225-webapp --deployment-group-name csye6225-webapp-deployment --s3-location bucket=${s3bucket},key=csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz,bundleType=tgz
             
       
 workflows:

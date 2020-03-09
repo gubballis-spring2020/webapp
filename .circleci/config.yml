@@ -134,8 +134,8 @@ jobs:
             rm -rf node_modules/
             mkdir -p codedeploy_artifact
             cd ..
-            tar -czvf csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz webapp/
-            mv csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz webapp/codedeploy_artifact/
+            tar -czvf csye6225-webapp-${CIRCLE_BUILD_NUM}.tar webapp/
+            mv csye6225-webapp-${CIRCLE_BUILD_NUM}.tar webapp/codedeploy_artifact/
             cd webapp/codedeploy_artifact/
             pwd
             ls -al
@@ -147,14 +147,13 @@ jobs:
             ls -al
             cd codedeploy_artifact
             aws configure list
-            aws s3 cp csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz s3://${s3bucket}
+            aws s3 cp csye6225-webapp-${CIRCLE_BUILD_NUM}.tar s3://${s3bucket}
 
       - run:
           name: Make CodeDeploy API call
           command: |
-            echo "Hello CodeDeploy"
-            echo "Testing" 
-            aws deploy create-deployment --no-verify-ssl --region us-east-1 --application-name csye6225-webapp --deployment-group-name csye6225-webapp-deployment --s3-location bucket=${s3bucket},key=csye6225-webapp-${CIRCLE_BUILD_NUM}.tar.gz,bundleType=tgz
+            echo "CodeDeploy creation" 
+            aws deploy create-deployment --region us-east-1 --application-name csye6225-webapp --deployment-group-name csye6225-webapp-deployment --s3-location bucket=${s3bucket},key=csye6225-webapp-${CIRCLE_BUILD_NUM}.tar,bundleType=tar
             
       
 workflows:

@@ -152,8 +152,6 @@ jobs:
       - run:
           name: Make CodeDeploy API call
           command: |
-            sudo update-ca-trust force-enable
-            ls -la /etc/pki/tls/certs
             echo "CodeDeploy creation" 
             aws deploy create-deployment --region us-east-1 --application-name csye6225-webapp --deployment-group-name csye6225-webapp-deployment --s3-location bucket=${s3bucket},key=csye6225-webapp-${CIRCLE_BUILD_NUM}.tar,bundleType=tar
             

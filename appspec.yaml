@@ -1,8 +1,8 @@
 version: 0.0
 os: linux
 files:
-  - source: webapp.tar.gz
-    destination: /home/centos/
+  - source: /
+    destination: /home/ubuntu/
 hooks:
   BeforeInstall:
     - location: codedeploy/stop_server.sh

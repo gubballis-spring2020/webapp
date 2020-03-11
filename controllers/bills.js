@@ -4,7 +4,7 @@ const User = require("../models/user");
 const uuidv4 = require('uuid/v4');
 
 // Using bcrypt to hash the password and store in the databse
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const saltRounds = 10;
 
 // Post a bill for a user

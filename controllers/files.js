@@ -11,7 +11,7 @@ const AWS = require('aws-sdk');
 var s3 = new AWS.S3();
 
 // Using bcrypt to hash the password and store in the databse
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
 // middleare to stroe files on the server
 const formidable = require('formidable');

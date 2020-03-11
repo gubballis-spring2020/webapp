@@ -3,7 +3,7 @@
 # update the permission and ownership of WAR file in the tomcat webapps directory
 echo "#CSYE6225: doing after install"
 pwd
-cd /home/ubuntu/
+cd /home/ubuntu/webapp
 sudo npm install
 sudo npm install pm2 -g
 

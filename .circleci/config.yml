@@ -129,8 +129,9 @@ jobs:
             rm -rf node_modules/\
             rm -rf aws/
             mkdir -p codedeploy_artifact
-            zip -r csye6225-webapp-${CIRCLE_BUILD_NUM}.zip codedeploy config controllers models routes *.json server.js *.yml 
-            mv csye6225-webapp-${CIRCLE_BUILD_NUM}.zip codedeploy_artifact/
+            cd ..
+            zip -r csye6225-webapp-${CIRCLE_BUILD_NUM}.zip webapp/ 
+            mv csye6225-webapp-${CIRCLE_BUILD_NUM}.zip webapp/codedeploy_artifact/
             cd codedeploy_artifact/
             pwd
             ls -al

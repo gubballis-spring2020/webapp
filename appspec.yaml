@@ -1,0 +1,18 @@
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /home/ubuntu/
+hooks:
+  BeforeInstall:
+    - location: codedeploy/stop_server.sh
+      runas: centos
+      timeout: 180
+  AfterInstall:
+    - location: codedeploy/afterInstall.sh
+      runas: centos
+      timeout: 180
+  ApplicationStart:
+    - location: codedeploy/start_server.sh
+      timeout: 3600
+      runas: centos

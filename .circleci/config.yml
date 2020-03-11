@@ -126,13 +126,15 @@ jobs:
             echo "Hello the current build number is ${CIRCLE_BUILD_NUM}"
             pwd
             ls -al
-            rm -rf node_modules/\
+            rm -rf node_modules/
             rm -rf aws/
+            rm -rf .circleci/
+            rm README.md
             mkdir -p codedeploy_artifact
             cd ..
             zip -r csye6225-webapp-${CIRCLE_BUILD_NUM}.zip webapp/ 
             mv csye6225-webapp-${CIRCLE_BUILD_NUM}.zip webapp/codedeploy_artifact/
-            cd codedeploy_artifact/
+            cd webapp/codedeploy_artifact/
             pwd
             ls -al
 

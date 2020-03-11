@@ -5,10 +5,10 @@ files:
     destination: /home/ubuntu
 hooks:
   AfterInstall:
-    - location: codedeploy/afterInstall.sh
+    - location: webapp/codedeploy/afterInstall.sh
       runas: ubuntu
       timeout: 180
   ApplicationStart:
-    - location: codedeploy/start_server.sh
+    - location: webapp/codedeploy/start_server.sh
       timeout: 3600
       runas: ubuntu

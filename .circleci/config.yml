@@ -131,8 +131,9 @@ jobs:
             rm -rf .circleci/
             rm README.md
             mkdir -p codedeploy_artifact
+            cp appspec.yml ../
             cd ..
-            zip -r csye6225-webapp-${CIRCLE_BUILD_NUM}.zip webapp/ 
+            zip -r csye6225-webapp-${CIRCLE_BUILD_NUM}.zip webapp/ *.yml
             mv csye6225-webapp-${CIRCLE_BUILD_NUM}.zip webapp/codedeploy_artifact/
             cd webapp/codedeploy_artifact/
             pwd

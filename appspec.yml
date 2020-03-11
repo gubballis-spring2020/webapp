@@ -4,15 +4,11 @@ files:
   - source: /
     destination: /home/ubuntu
 hooks:
-  BeforeInstall:
-    - location: codedeploy/stop_server.sh
-      runas: centos
-      timeout: 180
   AfterInstall:
     - location: codedeploy/afterInstall.sh
-      runas: centos
+      runas: ubuntu
       timeout: 180
   ApplicationStart:
     - location: codedeploy/start_server.sh
       timeout: 3600
-      runas: centos
+      runas: ubuntu

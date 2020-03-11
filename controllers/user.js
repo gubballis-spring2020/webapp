@@ -4,7 +4,7 @@ const uuidv4 = require('uuid/v4');
 const joi = require("joi");
 
 // Using bcrypt to hash the password and store in the databse
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const saltRounds = 10;
 
 // Export Get user request

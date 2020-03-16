@@ -3,6 +3,8 @@ const Bill = require("../models/bills");
 const User = require("../models/user");
 const File = require("../models/file");
 const uuidv4 = require('uuid/v4');
+const statsd = require('../statsd-client');
+const logger = require('../winston');
 var fs = require('fs');
 var dir = __dirname + "/uploads/";
 
@@ -19,6 +21,7 @@ const formidable = require('formidable');
 // Post a bill for a user
 exports.post_file = async (req, res) => {
 
+    statsd.increment("post file api called");
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
     const splitIndex = strauth.indexOf(':')                                 // split the index to get emailAdress and password
@@ -166,6 +169,7 @@ exports.post_file = async (req, res) => {
 // Fetch file information based on the bill ID and the user
 exports.get_file = (req, res) => {
 
+    statsd.increment("get file api called");
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
     const splitIndex = strauth.indexOf(':')                                 // split the index to get emailAdress and password
@@ -249,6 +253,7 @@ exports.get_file = (req, res) => {
 // Update a file based on the file ID and user
 exports.update_file = (req, res) => {
 
+    statsd.increment("update file api called");
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
     const splitIndex = strauth.indexOf(':')                                 // split the index to get emailAdress and password
@@ -437,6 +442,7 @@ exports.update_file = (req, res) => {
 // Delete a file based on the file ID and user
 exports.delete_file = (req, res) => {
 
+    statsd.increment("delete file api called");
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
     const splitIndex = strauth.indexOf(':')                                 // split the index to get emailAdress and password

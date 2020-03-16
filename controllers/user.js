@@ -1,6 +1,8 @@
 const mysqlConnection = require("../config/connection");
 const User = require("../models/user");
 const uuidv4 = require('uuid/v4');
+const statsd = require('../statsd-client');
+const logger = require('../winston');
 const joi = require("joi");
 
 // Using bcrypt to hash the password and store in the databse
@@ -10,6 +12,7 @@ const saltRounds = 10;
 // Export Get user request
 exports.get_user = (req, res) => {
 
+    statsd.increment("get user details api called");
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
     const splitIndex = strauth.indexOf(':')                                 // split the index to get emailAdress and password
@@ -17,6 +20,7 @@ exports.get_user = (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
+        logger.log('info','usrname or password not provided to get user details');
         return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
@@ -40,6 +44,7 @@ exports.get_user = (req, res) => {
 // Create a user
 exports.post_user = async (req, res) => {
 
+    statsd.increment("post user details api called");
     const user = req.body;
     const password_schema = joi.string().regex(/[a-zA-Z0-9]{5,30}/).required();
 
@@ -83,6 +88,8 @@ exports.post_user = async (req, res) => {
 
 // Update a user
 exports.update_user = (req, res) => {
+
+    statsd.increment("update user details api called");
     const user = req.body;
     const password_schema = joi.string().regex(/[a-zA-Z0-9]{5,30}/).required();
 

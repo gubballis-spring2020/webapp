@@ -2,6 +2,8 @@ const mysqlConnection = require("../config/connection");
 const Bill = require("../models/bills");
 const User = require("../models/user");
 const uuidv4 = require('uuid/v4');
+const statsd = require('../statsd-client');
+const logger = require('../winston');
 
 // Using bcrypt to hash the password and store in the databse
 const bcrypt = require("bcryptjs");
@@ -10,6 +12,7 @@ const saltRounds = 10;
 // Post a bill for a user
 exports.post_bills = async (req, res) => {
 
+    statsd.increment("post bill details api called");
     const bill = req.body;
 
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
@@ -60,6 +63,7 @@ exports.post_bills = async (req, res) => {
 // Fetch a bill based on the bill ID and the user
 exports.get_bills = (req, res) => {
 
+    statsd.increment("get bill details by ID api called");
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
     const splitIndex = strauth.indexOf(':')                                 // split the index to get emailAdress and password
@@ -114,6 +118,7 @@ exports.get_bills = (req, res) => {
 // Get all bills in the table for that user
 exports.get_all_bills = (req, res) => {
 
+    statsd.increment("get bill details api called");
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
     const splitIndex = strauth.indexOf(':')                                 // split the index to get emailAdress and password
@@ -162,6 +167,7 @@ exports.get_all_bills = (req, res) => {
 // Update a bill based on the bill ID and user
 exports.update_bill = (req, res) => {
 
+    statsd.increment("update bill details api called");
     const bill = req.body;
 
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
@@ -243,6 +249,7 @@ exports.update_bill = (req, res) => {
 // Delete a bill based on the bill ID and user
 exports.delete_bill = (req, res) => {
 
+    statsd.increment("delete bill details api called");
     const bill = req.body;
 
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password

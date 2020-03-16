@@ -19,7 +19,7 @@ app.use(bodyParser.json());
 
 app.use('/v1/user', userRouter);
 
-app.use('/v1/bill', billRouter);
+app.use('/v2/bill', billRouter);
 
 app.use('/v1/bill/:billId/file', fileRouter);
 

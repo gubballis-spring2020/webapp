@@ -63,7 +63,7 @@ describe('Get Endpoints', () => {
 describe('Post Endpoints', () => {
   it('should create a new bill', async () => {
     const res = await supertest(app)
-      .post('/v1/bill')
+      .post('/v2/bill')
       .auth("jane.doe@example.com","Cloud007")
       .send({
         vendor: "Northeastern University",
@@ -86,7 +86,7 @@ describe('Post Endpoints', () => {
 describe('Get Endpoints', () => {
   it('should throw an error when getting bill', async () => {
     const res = await supertest(app)
-      .post('/v1/bill')
+      .post('/v2/bill')
       .auth("jane.doe@example.com","")
       .send({
         vendor: "Northeastern University",

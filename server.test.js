@@ -59,29 +59,6 @@ describe('Get Endpoints', () => {
   })
 });
 
-// to test the post endpoint for bill
-describe('Post Endpoints', () => {
-  it('should create a new bill', async () => {
-    const res = await supertest(app)
-      .post('/v2/bill')
-      .auth("jane.doe@example.com","Cloud007")
-      .send({
-        vendor: "Northeastern University",
-        bill_date: "2020-01-06",
-        due_date: "2020-01-12",
-        amount_due: 7000.51,
-        categories: [
-          "college",
-          "tuition",
-          "spring2020"
-        ],
-        paymentStatus: "paid"
-      })
-    expect(res.statusCode).toEqual(400)
-    // expect(res.body).toHaveProperty('post')
-  })
-});
-
 // to test the get endpoint for bill
 describe('Get Endpoints', () => {
   it('should throw an error when getting bill', async () => {

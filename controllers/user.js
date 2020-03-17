@@ -46,6 +46,7 @@ exports.get_user = (req, res) => {
         }
         statsd.timing("get user api.timer",apiTimer);
         statsd.timing("get user query.timer",queryTimer);
+        logger.info(`get ${result[0].id} user detail success`);
         res.status(200).json({ id: result[0].id, first_name: result[0].first_name, last_name: result[0].last_name, email_address: result[0].email_address, account_created: result[0].createdAt, account_updated: result[0].updatedAt });
     }).catch(err => res.status(400))
 
@@ -62,6 +63,7 @@ exports.post_user = async (req, res) => {
 
     if (!user.email_address) {
         statsd.timing("post user api.timer",apiTimer);
+        logger.error("Email address not provided");
         return res.status(400).send({ message: 'Email address not provided' });
     }
 
@@ -94,6 +96,7 @@ exports.post_user = async (req, res) => {
                 }
                 statsd.timing("post user api.timer",apiTimer);
                 statsd.timing("post user query.timer",queryTimer);
+                logger.info(`user ${user.email_address} created`);
                 res.status(201).send({ message: "User created" })
             })
         })
@@ -170,6 +173,7 @@ exports.update_user = (req, res) => {
                     }
                     statsd.timing("update user api.timer",apiTimer);
                     statsd.timing("update user query.timer",queryTimer);
+                    logger.info(`user ${email_address} updated`);
                     res.status(204).send({ message: "User Updated" })
                 })
             }).catch(err => { console.log(err); return res.status(400).send({ message: 'Error updating user' }) })

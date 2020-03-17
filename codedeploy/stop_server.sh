@@ -1,9 +1,5 @@
 #!/bin/bash
 
-#pm2 stop app.js
-pwd
-cd ..
-pwd
-cd ..
-pwd
-sudo rm -rf ccwebapps/
+cd /home/ubuntu
+sudo pm2 stop -f server
+sudo rm -rf webapp/

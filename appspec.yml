@@ -4,6 +4,10 @@ files:
   - source: /
     destination: /home/ubuntu
 hooks:
+  BeforeInstal:
+    - location: webapp/codedeploy/stop_server.sh
+      runas: ubuntu
+      timeout: 180
   AfterInstall:
     - location: webapp/codedeploy/afterInstall.sh
       runas: ubuntu

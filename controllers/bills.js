@@ -34,7 +34,7 @@ exports.post_bills = async (req, res) => {
     }).then((result) => {
         // console.log(result['password']);
         if (result.length == 0) { // false if author already exists and was not created.
-            statsd.timing("post bill api.timer",timer);
+            statsd.timing("post bill api.timer",apiTimer);
             statsd.timing("post bill api.timer",queryTimer);
             return res.status(400).send({ message: "Email does not exists" })
         }
@@ -57,7 +57,7 @@ exports.post_bills = async (req, res) => {
             paymentStatus: bill.paymentStatus,
             attachment: ""
         }).then((result) => {
-            statsd.timing("post bill api.timer",timer);
+            statsd.timing("post bill api.timer",apiTimer);
             statsd.timing("post bill query.timer",queryTimer);
             res.status(201).send({ id: result['id'], created_ts: result['createdAt'], updated_ts: result['updatedAt'], owner_id: result['owner_id'], vendor: result['vendor'], bill_date: result['bill_date'], due_date: result['due_date'], amount_date: result['amount_due'], categories: result['categories'], paymentStatus: result['paymentStatus'], attachment: result['attachment'] })
         })

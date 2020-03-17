@@ -4,6 +4,8 @@
 echo "#CSYE6225: doing after install"
 pwd
 cd /home/ubuntu/webapp
+sudo cp -rf cloudwatch-config.json /opt/aws/amazon-cloudwatch-agent/etc/cloudwatch-config.json
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/cloudwatch-config.json -a restart
 sudo npm install
 sudo npm install pm2 -g
 

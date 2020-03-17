@@ -77,7 +77,7 @@ describe('Post Endpoints', () => {
         ],
         paymentStatus: "paid"
       })
-    expect(res.statusCode).toEqual(201)
+    expect(res.statusCode).toEqual(400)
     // expect(res.body).toHaveProperty('post')
   })
 });

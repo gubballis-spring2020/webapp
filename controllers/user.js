@@ -12,6 +12,7 @@ const saltRounds = 10;
 // Export Get user request
 exports.get_user = (req, res) => {
 
+    var apiTimer = new Date();
     statsd.increment("get user details api called");
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
@@ -20,39 +21,52 @@ exports.get_user = (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
-        logger.log('info','usrname or password not provided to get user details');
+        logger.error('username or password not provided');
+        statsd.timing("get user api.timer",apiTimer);
         return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
+    var queryTimer = new Date();
     User.findAll({
         where: {
             email_address: email_address
         }
     }).then((result) => {
-        console.log(result.length);
-        if ((result.length == 0)) res.status(400).send({ message: 'Email not found' })
+        if ((result.length == 0)) {
+            statsd.timing("get user api.timer",apiTimer);
+            statsd.timing("get user query.timer",queryTimer);
+            res.status(400).send({ message: 'Email not found' })
+        }
 
         const pass_compare = bcrypt.compareSync(password, result[0].password);               // compare the hashed password with password provided
         // console.log(pass_compare)
-        if (!pass_compare) return res.status(401).send({ message: 'Password not valid!' });
-
+        if (!pass_compare) {
+            logger.error('Password not valid!');
+            return res.status(401).send({ message: 'Password not valid!' });
+        }
+        statsd.timing("get user api.timer",apiTimer);
+        statsd.timing("get user query.timer",queryTimer);
         res.status(200).json({ id: result[0].id, first_name: result[0].first_name, last_name: result[0].last_name, email_address: result[0].email_address, account_created: result[0].createdAt, account_updated: result[0].updatedAt });
     }).catch(err => res.status(400))
+
 }
 
 
 // Create a user
 exports.post_user = async (req, res) => {
 
+    var apiTimer = new Date();
     statsd.increment("post user details api called");
     const user = req.body;
     const password_schema = joi.string().regex(/[a-zA-Z0-9]{5,30}/).required();
 
     if (!user.email_address) {
+        statsd.timing("post user api.timer",apiTimer);
         return res.status(400).send({ message: 'Email address not provided' });
     }
 
     bcrypt.hash(user.password, saltRounds, function (err, hash) {
+        var queryTimer = new Date();
         User.findOrCreate({
             where: {
                 email_address: user.email_address
@@ -68,6 +82,8 @@ exports.post_user = async (req, res) => {
             }
         }).then((result) => {
             if (!result[1]) { // false if user already exists and was not created.
+                statsd.timing("post user api.timer",apiTimer);
+                statsd.timing("post user query.timer",queryTimer);
                 return res.status(400).send({ message: "Email address already exists" })
             }
 
@@ -76,7 +92,8 @@ exports.post_user = async (req, res) => {
                     //console.log(err);
                     return res.status(400).send({ message: 'Password does not meet requirements' });
                 }
-
+                statsd.timing("post user api.timer",apiTimer);
+                statsd.timing("post user query.timer",queryTimer);
                 res.status(201).send({ message: "User created" })
             })
         })
@@ -89,6 +106,7 @@ exports.post_user = async (req, res) => {
 // Update a user
 exports.update_user = (req, res) => {
 
+    var apiTimer = new Date();
     statsd.increment("update user details api called");
     const user = req.body;
     const password_schema = joi.string().regex(/[a-zA-Z0-9]{5,30}/).required();
@@ -100,30 +118,38 @@ exports.update_user = (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
+        statsd.timing("update user api.timer",apiTimer);
         return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
     if (user.email_address) {
+        statsd.timing("update user api.timer",apiTimer);
         return res.status(400).send({ message: 'Email cannot be updated' });
     }
 
     if (!user.first_name || !user.last_name || !user.password) {
+        statsd.timing("update user api.timer",apiTimer);
         return res.status(400).send({ message: 'One or more fileds are not provided for update' });
     }
 
     bcrypt.hash(user.password, saltRounds, function (err, hash) {
+        var queryTimer = new Date();
         User.findOne({
             where: {
                 email_address: email_address
             }
         }).then((result) => {
             if (result['email_address'] == null) { // false if author already exists and was not created.
+                statsd.timing("update user api.timer",apiTimer);
+                statsd.timing("update user query.timer",queryTimer);
                 return res.status(400).send({ message: "Email does not exists" })
             }
 
             const pass_compare = bcrypt.compareSync(password, result['password']);               // compare the hashed password with password provided
             // console.log(pass_compare)
-            if (!pass_compare) return res.status(401).send({ message: 'Password not valid!' });
+            if (!pass_compare) {
+                return res.status(401).send({ message: 'Password not valid!' });
+            }
 
             User.update({
                 password: hash,
@@ -138,9 +164,12 @@ exports.update_user = (req, res) => {
                 joi.validate(user.password, password_schema, (err, result) => {
                     if (err) {
                         //console.log(err);
+                        statsd.timing("update user api.timer",apiTimer);
+                        statsd.timing("update user query.timer",queryTimer);
                         return res.status(400).send({ message: 'Password does not meet requirements' });
                     }
-
+                    statsd.timing("update user api.timer",apiTimer);
+                    statsd.timing("update user query.timer",queryTimer);
                     res.status(204).send({ message: "User Updated" })
                 })
             }).catch(err => { console.log(err); return res.status(400).send({ message: 'Error updating user' }) })

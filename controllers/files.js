@@ -21,6 +21,7 @@ const formidable = require('formidable');
 // Post a bill for a user
 exports.post_file = async (req, res) => {
 
+    var apiTimer = new Date();
     statsd.increment("post file api called");
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
@@ -29,9 +30,11 @@ exports.post_file = async (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
+        statsd.timing("post file api.timer",apiTimer);
         return res.status(401).send({ error: true, message: 'Please provide email address or password' });
     }
 
+    var queryTimer = new Date();
     // check if user exists
     User.findOne({
         where: {
@@ -39,12 +42,17 @@ exports.post_file = async (req, res) => {
         }
     }).then((result) => {
         if (result.length == 0) { // false if author already exists and was not created.
+            statsd.timing("post file api.timer",apiTimer);
+            statsd.timing("post file query.timer",queryTimer);
             return res.status(400).send({ message: "Email does not exists" })
         }
 
         const pass_result = bcrypt.compareSync(password, result['password']);               // compare the hashed password with password provided
-        if (!pass_result) return res.status(401).send({ message: 'Password not valid!' });
-
+        if (!pass_result) {
+            statsd.timing("post file api.timer",apiTimer);
+            statsd.timing("post file query.timer",queryTimer);
+            return res.status(401).send({ message: 'Password not valid!' });
+        }
         const billId = req.baseUrl.substring(9, 45);
         const user_id = result['id'];
         const file_owner = result['email_address']
@@ -56,6 +64,8 @@ exports.post_file = async (req, res) => {
             }
         }).then((result) => {
             if (result.lenth == 0) {
+                statsd.timing("post file api.timer",apiTimer);
+                statsd.timing("post file query.timer",queryTimer);
                 return res.status(404).send({ message: 'Bill not found' })
             }
 
@@ -67,6 +77,8 @@ exports.post_file = async (req, res) => {
                 }
             }).then((result) => {
                 if (result.length == 0) {
+                    statsd.timing("post file api.timer",apiTimer);
+                    statsd.timing("post file query.timer",queryTimer);
                     return res.status(401).send({ message: 'Not authorized to attach file to bill' })
                 }
 
@@ -104,6 +116,8 @@ exports.post_file = async (req, res) => {
                             }
                         }).then((result) => {
                             if (!result[1]) { // false if user already exists and was not created.
+                                statsd.timing("post file api.timer",apiTimer);
+                                statsd.timing("post file query.timer",queryTimer);
                                 return res.status(400).send({ message: "File already exists" })
                             }
 
@@ -114,6 +128,7 @@ exports.post_file = async (req, res) => {
                                 });
                             }
                             else {
+                                var s3Timer = new Date();
                                 const params = {
                                     Bucket: process.env.S3_BUCKET,
                                     Key: file_name,
@@ -125,6 +140,7 @@ exports.post_file = async (req, res) => {
                                         console.log(err);
                                     }
                                 });
+                                statsd.timing("post file s3.timer",s3Timer);
                             }
 
 
@@ -133,7 +149,8 @@ exports.post_file = async (req, res) => {
                                     id: uuid
                                 }
                             }).then((result) => {
-
+                                statsd.timing("post file api.timer",apiTimer);
+                                statsd.timing("post file query.timer",queryTimer);
                                 res.status(201).send({ id: result['id'], file_name: result['file_name'], upload_date: result['createdAt'], url: result['url'] });
 
                             }).catch(err => res.status(400).send({ message: 'Error retrieving file info' }));
@@ -153,6 +170,7 @@ exports.post_file = async (req, res) => {
                         })
 
                     } else {
+                        
                         return res.status(400).send({ message: 'File type not supported' })
                     }
                 });
@@ -169,6 +187,7 @@ exports.post_file = async (req, res) => {
 // Fetch file information based on the bill ID and the user
 exports.get_file = (req, res) => {
 
+    var apiTimer = new Date();
     statsd.increment("get file api called");
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
@@ -177,9 +196,11 @@ exports.get_file = (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
+        statsd.timing("get file api.timer",apiTimer);
         return res.status(401).send({ error: true, message: 'Please provide email address or password' });
     }
 
+    var queryTimer = new Date();
     // check if user exists
     User.findOne({
         where: {
@@ -187,6 +208,8 @@ exports.get_file = (req, res) => {
         }
     }).then((result) => {
         if (result.length == 0) { // false if author already exists and was not created.
+            statsd.timing("get file api.timer",apiTimer);
+            statsd.timing("get file query.timer",queryTimer);
             return res.status(400).send({ message: "Email does not exists" })
         }
 
@@ -204,6 +227,8 @@ exports.get_file = (req, res) => {
             }
         }).then((result) => {
             if (result.length == 0) {
+                statsd.timing("get file api.timer",apiTimer);
+                statsd.timing("get file query.timer",queryTimer);
                 return res.status(400).send({ message: 'Bill not found' })
             }
 
@@ -221,6 +246,8 @@ exports.get_file = (req, res) => {
                 }).then((result) => {
                     // console.log(result)
                     if (result == null) {
+                        statsd.timing("get file api.timer",apiTimer);
+                        statsd.timing("get file query.timer",queryTimer);
                         return res.status(404).send({ message: 'File info not found' })
                     }
 
@@ -232,9 +259,13 @@ exports.get_file = (req, res) => {
                         }
                     }).then((result) => {
                         if (result == null) {
+                            statsd.timing("get file api.timer",apiTimer);
+                            statsd.timing("get file query.timer",queryTimer);
                             return res.status(401).send({ message: 'File info cannot be seen' })
                         }
 
+                        statsd.timing("get file api.timer",apiTimer);
+                        statsd.timing("get file query.timer",queryTimer);
                         res.status(200).send({ id: result['id'], file_name: result['file_name'], upload_date: result['createdAt'], url: result['url'] });
                     })
                         .catch((err) => { console.log(err); return res.status(404).send({ message: 'File Info not found' }) })
@@ -253,6 +284,7 @@ exports.get_file = (req, res) => {
 // Update a file based on the file ID and user
 exports.update_file = (req, res) => {
 
+    var apiTimer = new Date();
     statsd.increment("update file api called");
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
@@ -264,6 +296,7 @@ exports.update_file = (req, res) => {
         return res.status(401).send({ error: true, message: 'Please provide email address or password' });
     }
 
+    var queryTimer = new Date();
     // check if user exists
     User.findOne({
         where: {
@@ -319,6 +352,7 @@ exports.update_file = (req, res) => {
                             file_owner: file_owner
                         }
                     }).then((result) => {
+                        var s3Timer = new Date();
                         if (process.env.DB_HOST == "localhost") {
                             // Old upload
                             var file_delete = result['url'];
@@ -348,6 +382,8 @@ exports.update_file = (req, res) => {
                             }
                         }).then((result) => {
                             if (result == 0) {
+                                statsd.timing("update file api.timer",apiTimer);
+                                statsd.timing("update file query.timer",queryTimer);
                                 return res.status(401).send({ message: 'File cannot be updated' })
                             }
 
@@ -398,7 +434,7 @@ exports.update_file = (req, res) => {
                                                 console.log(err);
                                             }
                                         });
-
+                                        statsd.timing("update file s3.timer",s3Timer);
                                     }
 
                                     const fileinfo = "FILE_NAME: " + file_name + "; ID: " + uuid + "; UPLOAD_DATE: " + new Date().toISOString().split('T')[0] + "; URL: " + newpath;
@@ -412,6 +448,8 @@ exports.update_file = (req, res) => {
                                             owner_id: user_id
                                         }
                                     }).then(() => {
+                                        statsd.timing("update file api.timer",apiTimer);
+                                        statsd.timing("update file query.timer",queryTimer);
                                         res.status(204).send({ message: 'File updated' })
                                     })
                                         .catch((err) => { return res.status(400).send({ message: "Error updating a bill with file" }) })
@@ -442,6 +480,7 @@ exports.update_file = (req, res) => {
 // Delete a file based on the file ID and user
 exports.delete_file = (req, res) => {
 
+    var apiTimer = new Date();
     statsd.increment("delete file api called");
     const b64auth = (req.headers.authorization || '').split(' ')[1] || ''   // split the base64 code to get username and password
     const strauth = new Buffer(b64auth, 'base64').toString()                // convert the base64 encode to string
@@ -450,9 +489,11 @@ exports.delete_file = (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
+        statsd.timing("delete file api.timer",apiTimer);
         return res.status(401).send({ error: true, message: 'Please provide email address or password' });
     }
 
+    var queryTimer = new Date();
     // check if user exists
     User.findOne({
         where: {
@@ -488,6 +529,8 @@ exports.delete_file = (req, res) => {
                 }
             }).then((result) => {
                 if (result.length == 0) {
+                    statsd.timing("delete file api.timer",apiTimer);
+                    statsd.timing("delete file query.timer",queryTimer);
                     return res.status(401).send({ message: 'Not authorized to attach file to bill' })
                 }
                 console.log(req.params.fileId)
@@ -498,6 +541,8 @@ exports.delete_file = (req, res) => {
                 }).then((result) => {
                     console.log(result)
                     if (result == null) {
+                        statsd.timing("delete file api.timer",apiTimer);
+                        statsd.timing("delete file query.timer",queryTimer);
                         return res.status(404).send({ message: 'File info not found' })
                     }
 
@@ -516,6 +561,7 @@ exports.delete_file = (req, res) => {
                             });
                         }
                         else {
+                            var s3Timer = new Date();
                             var file_delete = result['url'].split('/')[3];
                             const params = {
                                 Bucket: process.env.S3_BUCKET,
@@ -527,6 +573,7 @@ exports.delete_file = (req, res) => {
                                     console.log(err);
                                 }
                             });
+                            statsd.timing("delete file s3.timer",s3Timer);
                         }    
 
                         File.destroy({
@@ -537,10 +584,13 @@ exports.delete_file = (req, res) => {
                             }
                         }).then((result) => {
                             if (result == 0) {
+                                statsd.timing("delete file api.timer",apiTimer);
+                                statsd.timing("delete file query.timer",queryTimer);
                                 return res.status(401).send({ message: 'File cannot be deleted' })
                             }
 
-
+                            statsd.timing("delete file api.timer",apiTimer);
+                            statsd.timing("delete file query.timer",queryTimer);
                             return res.status(204).send({ message: 'File deleted' })
                         })
                             .catch(err => { console.log(err); return res.status(400).send({ message: 'Error deleting file' }) })

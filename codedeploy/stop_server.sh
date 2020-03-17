@@ -8,3 +8,4 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
     -a stop
 sudo pm2 stop -f server
 sudo rm -rf webapp/
+sudo rm -rf webapp/

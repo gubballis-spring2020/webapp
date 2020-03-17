@@ -6,13 +6,13 @@ files:
 hooks:
   BeforeInstal:
     - location: webapp/codedeploy/stop_server.sh
-      runas: ubuntu
+      runas: root
       timeout: 180
   AfterInstall:
     - location: webapp/codedeploy/afterInstall.sh
-      runas: ubuntu
+      runas: root
       timeout: 180
   ApplicationStart:
     - location: webapp/codedeploy/start_server.sh
       timeout: 3600
-      runas: ubuntu
+      runas: root

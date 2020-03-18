@@ -86,6 +86,7 @@ exports.post_user = async (req, res) => {
             if (!result[1]) { // false if user already exists and was not created.
                 statsd.timing("post user api.timer",apiTimer);
                 statsd.timing("post user query.timer",queryTimer);
+                logger.error(`user ${result[1]} exists`);
                 return res.status(400).send({ message: "Email address already exists" })
             }
 

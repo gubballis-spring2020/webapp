@@ -35,6 +35,7 @@ exports.get_user = (req, res) => {
         if ((result.length == 0)) {
             statsd.timing("get user api.timer",apiTimer);
             statsd.timing("get user query.timer",queryTimer);
+            logger.error('Email not found');
             res.status(400).send({ message: 'Email not found' })
         }
 
@@ -46,7 +47,7 @@ exports.get_user = (req, res) => {
         }
         statsd.timing("get user api.timer",apiTimer);
         statsd.timing("get user query.timer",queryTimer);
-        logger.info(`get ${result[0].id} user detail success`);
+        logger.info(`get ${result[0].email_address} user detail success`);
         res.status(200).json({ id: result[0].id, first_name: result[0].first_name, last_name: result[0].last_name, email_address: result[0].email_address, account_created: result[0].createdAt, account_updated: result[0].updatedAt });
     }).catch(err => res.status(400))
 
@@ -84,9 +85,10 @@ exports.post_user = async (req, res) => {
             }
         }).then((result) => {
             if (!result[1]) { // false if user already exists and was not created.
+                console.log(result);    
                 statsd.timing("post user api.timer",apiTimer);
                 statsd.timing("post user query.timer",queryTimer);
-                logger.error(`user ${result[1]} exists`);
+                logger.error(`user does not exists`);
                 return res.status(400).send({ message: "Email address already exists" })
             }
 
@@ -123,11 +125,13 @@ exports.update_user = (req, res) => {
 
     if (!email_address || !password) {
         statsd.timing("update user api.timer",apiTimer);
+        logger.error('Please provide email address or pssword');
         return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
     if (user.email_address) {
         statsd.timing("update user api.timer",apiTimer);
+        logger.error('Email cannot be updated');
         return res.status(400).send({ message: 'Email cannot be updated' });
     }
 
@@ -146,12 +150,14 @@ exports.update_user = (req, res) => {
             if (result['email_address'] == null) { // false if author already exists and was not created.
                 statsd.timing("update user api.timer",apiTimer);
                 statsd.timing("update user query.timer",queryTimer);
+                logger.error('Email does not exists');
                 return res.status(400).send({ message: "Email does not exists" })
             }
 
             const pass_compare = bcrypt.compareSync(password, result['password']);               // compare the hashed password with password provided
             // console.log(pass_compare)
             if (!pass_compare) {
+                logger.error('Password not valid!');
                 return res.status(401).send({ message: 'Password not valid!' });
             }
 
@@ -170,6 +176,7 @@ exports.update_user = (req, res) => {
                         //console.log(err);
                         statsd.timing("update user api.timer",apiTimer);
                         statsd.timing("update user query.timer",queryTimer);
+                        logger.error('Password does not meet requirements');
                         return res.status(400).send({ message: 'Password does not meet requirements' });
                     }
                     statsd.timing("update user api.timer",apiTimer);

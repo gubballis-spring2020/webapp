@@ -14,9 +14,9 @@ const logger = winston.createLogger({
         winston.format.json()
         ),
     transports: [
-    new winston.transports.File({
-        filename: path.resolve(dir, '/webapp.log')
-    })
+        new winston.transports.File({
+            filename: path.join(dir, '/webapp.log')
+        })
 ]});
 
 module.exports = logger;

@@ -5,7 +5,7 @@ files:
     destination: /home/ubuntu
 hooks:
   BeforeInstal:
-    - location: webapp/codedeploy/stop_server.sh
+    - location: webapp/codedeploy/beforeInstall.sh
       runas: root
       timeout: 180
   AfterInstall:

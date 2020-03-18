@@ -1,0 +1,28 @@
+(node:16123) [SEQUELIZE0004] DeprecationWarning: A boolean value was passed to options.operatorsAliases. This is a no-op with v5 and should be removed.
+Executing (default): CREATE DATABASE IF NOT EXISTS `csye6225`;
+Executing (default): SELECT 1+1 AS result
+Executing (default): CREATE TABLE IF NOT EXISTS `users` (`id` VARCHAR(255) , `email_address` VARCHAR(255), `first_name` VARCHAR(255) NOT NULL, `last_name` VARCHAR(255) NOT NULL, `account_created` DATETIME, `account_updated` DATETIME, `password` VARCHAR(255) NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB;
+Executing (default): CREATE TABLE IF NOT EXISTS `bills` (`id` VARCHAR(255) , `created_ts` DATETIME, `updated_ts` DATETIME, `owner_id` VARCHAR(255), `vendor` VARCHAR(255) NOT NULL, `bill_date` DATE NOT NULL, `due_date` DATE NOT NULL, `amount_due` DECIMAL NOT NULL, `categories` VARCHAR(255) NOT NULL, `paymentStatus` ENUM('paid', 'due', ' past_due', 'no_payment_required') NOT NULL, `attachment` TEXT NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB;
+Executing (default): CREATE TABLE IF NOT EXISTS `files` (`id` VARCHAR(255) , `bill_id` VARCHAR(255) , `upload_date` DATE, `file_name` VARCHAR(255), `url` VARCHAR(255), `file_owner` VARCHAR(255), `size` DOUBLE PRECISION, PRIMARY KEY (`id`, `bill_id`)) ENGINE=InnoDB;
+Connected
+Executing (default): SHOW INDEX FROM `bills`
+Database created!
+Executing (default): SHOW INDEX FROM `files`
+Executing (default): SHOW INDEX FROM `users`
+Bills table created
+Users table created
+Files table created
+(node:16151) [SEQUELIZE0004] DeprecationWarning: A boolean value was passed to options.operatorsAliases. This is a no-op with v5 and should be removed.
+Executing (default): CREATE DATABASE IF NOT EXISTS `csye6225`;
+Executing (default): SELECT 1+1 AS result
+Executing (default): CREATE TABLE IF NOT EXISTS `users` (`id` VARCHAR(255) , `email_address` VARCHAR(255), `first_name` VARCHAR(255) NOT NULL, `last_name` VARCHAR(255) NOT NULL, `account_created` DATETIME, `account_updated` DATETIME, `password` VARCHAR(255) NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB;
+Executing (default): CREATE TABLE IF NOT EXISTS `bills` (`id` VARCHAR(255) , `created_ts` DATETIME, `updated_ts` DATETIME, `owner_id` VARCHAR(255), `vendor` VARCHAR(255) NOT NULL, `bill_date` DATE NOT NULL, `due_date` DATE NOT NULL, `amount_due` DECIMAL NOT NULL, `categories` VARCHAR(255) NOT NULL, `paymentStatus` ENUM('paid', 'due', ' past_due', 'no_payment_required') NOT NULL, `attachment` TEXT NOT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB;
+Executing (default): CREATE TABLE IF NOT EXISTS `files` (`id` VARCHAR(255) , `bill_id` VARCHAR(255) , `upload_date` DATE, `file_name` VARCHAR(255), `url` VARCHAR(255), `file_owner` VARCHAR(255), `size` DOUBLE PRECISION, PRIMARY KEY (`id`, `bill_id`)) ENGINE=InnoDB;
+Connected
+Database created!
+Executing (default): SHOW INDEX FROM `files`
+Executing (default): SHOW INDEX FROM `bills`
+Executing (default): SHOW INDEX FROM `users`
+Bills table created
+Files table created
+Users table created

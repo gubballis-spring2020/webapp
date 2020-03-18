@@ -37,7 +37,7 @@
 
 const winston = require('winston');
 const path = require('path');
-
+var dir = '/opt/aws/amazon-cloudwatch-agent/logs';
 // const logConfiguration = {
     
 // }
@@ -50,7 +50,7 @@ const logger = winston.createLogger({
     transports: [
     //new winston.transports.Console()
     new winston.transports.File({
-        filename: path.resolve(__dirname, '../var/webapp.log')
+        filename: path.resolve(dir, '/webapp.log')
     })
 ]});
 //console.log(__dirname);

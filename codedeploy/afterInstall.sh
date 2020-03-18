@@ -8,18 +8,3 @@ sudo cp -rf amazon-cloudwatch-config.json /opt/aws/amazon-cloudwatch-agent/etc/a
 sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-config.json -s
 sudo npm install
 sudo npm install pm2 -g
-
-# sudo mkdir ccwebapps
-# #move tar.gz to ccwebapps
-# sudo mv webapp.zip ccwebapps/
-# #remove from ccwebapps
-# sudo rm -rf webapp
-# #unzip in ccwebapps
-# cd ccwebapps
-# sudo tar xzvf webapp.tar.gz
-# sudo rm -rf webapp.tar.gz
-
-# cd webapp
-# pwd
-# sudo npm install
-# sudo npm install pm2 -g

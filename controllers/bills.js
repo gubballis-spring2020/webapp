@@ -23,6 +23,7 @@ exports.post_bills = async (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
+        logger.error('Post bill: Please provide email address or password');
         return res.status(401).send({ error: true, message: 'Please provide email address or password' });
     }
 
@@ -36,11 +37,13 @@ exports.post_bills = async (req, res) => {
         if (result.length == 0) { // false if author already exists and was not created.
             statsd.timing("post bill api.timer",apiTimer);
             statsd.timing("post bill api.timer",queryTimer);
+            logger.error('Post bill: Email does not exists');
             return res.status(400).send({ message: "Email does not exists" })
         }
 
         const pass_result = bcrypt.compareSync(password, result['password']);               // compare the hashed password with password provided
         if (!pass_result) {
+            logger.error('Post bill: Password not valid!');
             return res.status(401).send({ message: 'Password not valid!' });
         }
 
@@ -59,6 +62,7 @@ exports.post_bills = async (req, res) => {
         }).then((result) => {
             statsd.timing("post bill api.timer",apiTimer);
             statsd.timing("post bill query.timer",queryTimer);
+            logger.info(`Post bill: bill ${result['id']} created`);
             res.status(201).send({ id: result['id'], created_ts: result['createdAt'], updated_ts: result['updatedAt'], owner_id: result['owner_id'], vendor: result['vendor'], bill_date: result['bill_date'], due_date: result['due_date'], amount_date: result['amount_due'], categories: result['categories'], paymentStatus: result['paymentStatus'], attachment: result['attachment'] })
         })
             .catch(err => { console.log(err); return res.status(400).send({ message: 'Error creating bill' }) })
@@ -80,6 +84,7 @@ exports.get_bills = (req, res) => {
     const password = strauth.substring(splitIndex + 1)
 
     if (!email_address || !password) {
+        logger.error('Get bill(ID): Please provide email address or pssword');
         return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
     
@@ -93,6 +98,7 @@ exports.get_bills = (req, res) => {
         if (result.length == 0) { // false if author already exists and was not created.
             statsd.timing("get bill by ID api.timer",apiTimer);
             statsd.timing("get bill by ID query.timer",queryTimer);
+            logger.error('Get bill(ID): Email does not exists');
             return res.status(400).send({ message: "Email does not exists" })
         }
 
@@ -100,6 +106,7 @@ exports.get_bills = (req, res) => {
         if (!pass_result) {
             statsd.timing("get bill by ID api.timer",apiTimer);
             statsd.timing("get bill by ID query.timer",queryTimer);
+            logger.error('Get bill(ID): Password not valid!');
             return res.status(401).send({ message: 'Password not valid!' });
         }
 
@@ -113,6 +120,7 @@ exports.get_bills = (req, res) => {
             if (result.lenth == 0) {
                 statsd.timing("get bill by ID api.timer",apiTimer);
                 statsd.timing("get bill by ID query.timer",queryTimer);
+                logger.error('Get bill(ID): Bill not found');
                 return res.status(404).send({ message: 'Bill not found' })
             }
 
@@ -124,6 +132,7 @@ exports.get_bills = (req, res) => {
             }).then((result) => {
                 statsd.timing("get bill by ID api.timer",apiTimer);
                 statsd.timing("get bill by ID query.timer",queryTimer);
+                logger.info(`Get bill(ID): get ${result['id']} success`);
                 res.status(200).send({ id: result['id'], created_ts: result['createdAt'], updated_ts: result['updatedAt'], owner_id: result['owner_id'], vendor: result['vendor'], bill_date: result['bill_date'], due_date: result['due_date'], amount_date: result['amount_due'], categories: result['categories'], paymentStatus: result['paymentStatus'] , attachment: result['attachment']})
             })
                 .catch(err => { return res.status(401).send({ message: 'Bill cannot be seen' }) })
@@ -147,6 +156,7 @@ exports.get_all_bills = (req, res) => {
 
     if (!email_address || !password) {
         statsd.timing("get all bills api.timer",apiTimer);
+        logger.error('Get bills: Please provide email address or pssword');
         return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
@@ -161,6 +171,7 @@ exports.get_all_bills = (req, res) => {
         if (user_result.length == 0) { // false if author already exists and was not created.
             statsd.timing("get all bills api.timer",apiTimer);
             statsd.timing("get all bills query.timer",queryTimer);
+            logger.error('Get bills: Email does not exists');
             return res.status(400).send({ message: "Email does not exists" })
         }
 
@@ -170,6 +181,7 @@ exports.get_all_bills = (req, res) => {
         if (!pass_result) {
             statsd.timing("get all bills api.timer",apiTimer);
             statsd.timing("get all bills query.timer",queryTimer);
+            logger.error('Get bills: Password not valid!');
             return res.status(401).send({ message: 'Password not valid!' });
         }
 
@@ -182,10 +194,12 @@ exports.get_all_bills = (req, res) => {
             if (results.lenth == 0) {
                 statsd.timing("get all bills api.timer",apiTimer);
                 statsd.timing("get all bills query.timer",queryTimer);
+                logger.error('Get bills: Bill not found');
                 return res.status(404).send({ message: 'Bill not found' })
             }
             statsd.timing("get all bills api.timer",apiTimer);
             statsd.timing("get all bills query.timer",queryTimer);
+            logger.info('Get bills for a user success');
             res.status(200).send(results);
 
         })
@@ -210,6 +224,7 @@ exports.update_bill = (req, res) => {
 
     if (!email_address || !password) {
         statsd.timing("update bill api.timer",apiTimer);
+        logger.error('Update bill: Please provide email address or password');
         return res.status(401).send({ error: true, message: 'Please provide email address or password' });
     }
 
@@ -228,6 +243,7 @@ exports.update_bill = (req, res) => {
         if (result.length == 0) { // false if author already exists and was not created.
             statsd.timing("update bill api.timer",apiTimer);
             statsd.timing("update bill query.timer",queryTimer);
+            logger.error('Update bill: Email does not exists');
             return res.status(400).send({ message: "Email does not exists" })
         }
 
@@ -235,6 +251,7 @@ exports.update_bill = (req, res) => {
         if (!pass_result) {
             statsd.timing("update bill api.timer",apiTimer);
             statsd.timing("update bill query.timer",queryTimer);
+            logger.error('Update bill: Password not valid!');
             return res.status(401).send({ message: 'Password not valid!' });
         }
         const user_id = result['id'];
@@ -249,6 +266,7 @@ exports.update_bill = (req, res) => {
             if (result.lenth == 0) {
                 statsd.timing("update bill api.timer",apiTimer);
                 statsd.timing("update bill query.timer",queryTimer);
+                logger.error('Update bill: Bill not found');
                 return res.status(404).send({ message: 'Bill not found' })
             }
 
@@ -270,6 +288,7 @@ exports.update_bill = (req, res) => {
                 if (result[0] == 0) {
                     statsd.timing("update bill api.timer",apiTimer);
                     statsd.timing("update bill api.timer",queryTimer);
+                    logger.error('Update bill: Bill cannot be updated');
                     return res.status(401).send({ message: 'Bill cannot be updated' })
                 }
 
@@ -281,6 +300,7 @@ exports.update_bill = (req, res) => {
                 }).then((result) => {
                     statsd.timing("update bill api.timer",apiTimer);
                     statsd.timing("update bill query.timer",queryTimer);
+                    logger.info('Update bill success');
                     res.status(200).send(result)
                 })
             })
@@ -307,6 +327,7 @@ exports.delete_bill = (req, res) => {
 
     if (!email_address || !password) {
         statsd.timing("delete bill api.timer",apiTimer);
+        logger.error('Delete bill: Please provide email address or pssword');
         return res.status(401).send({ error: true, message: 'Please provide email address or pssword' });
     }
 
@@ -320,6 +341,7 @@ exports.delete_bill = (req, res) => {
         if (result.length == 0) { // false if author already exists and was not created.
             statsd.timing("delete bill api.timer",apiTimer);
             statsd.timing("delete bill query.timer",queryTimer);
+            logger.error('Delete bill: Email does not exists');
             return res.status(400).send({ message: "Email does not exists" })
         }
 
@@ -327,6 +349,7 @@ exports.delete_bill = (req, res) => {
         if (!pass_result) {
             statsd.timing("delete bill api.timer",apiTimer);
             statsd.timing("delete bill query.timer",queryTimer);
+            logger.error('Delete bill: Password not valid!');
             return res.status(401).send({ message: 'Password not valid!' });
         }
         const user_id = result['id'];
@@ -341,6 +364,7 @@ exports.delete_bill = (req, res) => {
             if (result.lenth == 0) {
                 statsd.timing("delete bill api.timer",apiTimer);
                 statsd.timing("delete bill query.timer",queryTimer);
+                logger.error('Delete bill: Bill not found');
                 return res.status(404).send({ message: 'Bill not found' })
             }
 
@@ -355,11 +379,13 @@ exports.delete_bill = (req, res) => {
                 if (result == 0) {
                     statsd.timing("delete bill api.timer",apiTimer);
                     statsd.timing("delete bill query.timer",queryTimer);
+                    logger.error('Delete bill: Bill cannot be deleted');
                     return res.status(401).send({ message: 'Bill cannot be deleted' })
                 }
 
                 statsd.timing("delete bill api.timer",apiTimer);
                 statsd.timing("delete bill query.timer",queryTimer);
+                logger.info('Delete bill successful');
                 return res.status(204).send()
             })
             .catch(err => {console.log(err); return res.status(400).send({ message: 'Error deleting bill' }) })

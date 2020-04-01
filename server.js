@@ -2,7 +2,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mysqlConnection = require("./config/connection");
-
+const sns = require('./controllers/snsPublish');
 // Routes for User
 const userRouter = require("./routes/user");
 

@@ -7,6 +7,14 @@ const logger = require('../winston');
 const sequelize = require('sequelize');
 const Op = sequelize.Op;
 
+// Load the AWS SDK for Node.js
+const AWS = require('aws-sdk');
+// Set the region we will be using
+AWS.config.update({region: 'us-east-1'});
+
+// Create SQS service client
+const sqs = new AWS.SQS({ apiVersion: '2012-11-05' });
+
 // Using bcrypt to hash the password and store in the databse
 const bcrypt = require("bcryptjs");
 const saltRounds = 10;
@@ -264,9 +272,9 @@ exports.get_all_bills_due = (req, res) => {
 
         Bill.findAll({
             where: {
-                [Op.and] : [
+                [Op.and]: [
                     sequelize.where(sequelize.fn('datediff', sequelize.col('due_date'), sequelize.fn("NOW")), {
-                        [Op.lte] : req.params.days // OR [Op.gt] : 5
+                        [Op.lte]: req.params.days // OR [Op.gt] : 5
                     }),
                     { owner_id: user_id }
                 ]
@@ -282,6 +290,30 @@ exports.get_all_bills_due = (req, res) => {
             statsd.timing("get all bills api.timer", apiTimer);
             statsd.timing("get all bills query.timer", queryTimer);
             logger.info('Get bills for a user success');
+
+            // Setup the sendMessage parameter object   
+            const params = {
+                MessageAttributes: {
+                    "User": {
+                      DataType: "String",
+                      StringValue: email_address
+                    },
+                    "Bills": {
+                      DataType: "String",
+                      StringValue: req.protocol + '://' + req.get('host') + req.originalUrl
+                    }
+                  },
+                MessageBody: `The link for bills due in the next ${req.params.days} days`,
+                QueueUrl: `https://sqs.us-east-1.amazonaws.com/${process.env.ACCOUNT_ID}/csye6225-spring2020`
+            };
+            sqs.sendMessage(params, (err, data) => {
+                if (err) {
+                    console.log("Error", err);
+                } else {
+                    console.log("Successfully added message", data.MessageId);
+                }
+            });
+
             res.status(200).send(results);
 
         })

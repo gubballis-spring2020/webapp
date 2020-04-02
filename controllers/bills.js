@@ -288,7 +288,7 @@ exports.get_all_bills_due = (req, res) => {
             statsd.timing("get all bills query.timer", queryTimer);
             logger.info('Get bills for a user success');
 
-            var links = "The links for bills - \n";
+            var links = `The links for bills due in next ${req.params.days} - \n`;
             for(let i=0; i<results.length;i++){
                 let link = req.protocol + '://' + req.get('host') + '/v2/bill/' + results[i]['dataValues']['id'] + '\n';
                 links += link; 

@@ -1,26 +1,27 @@
 const { Consumer } = require('sqs-consumer');
 const AWS = require('aws-sdk');
 AWS.config.update({ region: 'us-east-1' });
+const logger = require('../winston');
 
 const consumer = Consumer.create({
-    queueUrl: 'https://sqs.us-east-1.amazonaws.com/823301983257/csye6225-spring2020',
-    messageAttributeNames: ['User', 'Bills'],
+    queueUrl: `https://sqs.us-east-1.amazonaws.com/${process.env.ACCOUNT_ID}/${process.env.SQS_QUEUE_NAME}`,
+    messageAttributeNames: ['email_address', 'Bills'],
     handleMessage: async (message) => {
         console.log(message);
         // Create publish parameters
         var params = {
-            Message: message.Body + ' for user ' + message.MessageAttributes['User'].StringValue + '. Link to the bills ' + message.MessageAttributes['Bills'].StringValue, /* required */
+            Message: message.Body + ' for user ' + message.MessageAttributes['email_address'].StringValue + '. Link to the bills ' + message.MessageAttributes['Bills'].StringValue, /* required */
             MessageAttributes: {
-                "User": {
+                "email_address": {
                     DataType: "String",
-                    StringValue: message.MessageAttributes['User'].StringValue
+                    StringValue: message.MessageAttributes['email_address'].StringValue
                 },
                 "Bills": {
                     DataType: "String",
                     StringValue: message.MessageAttributes['Bills'].StringValue
                 }
             },
-            TopicArn: 'arn:aws:sns:us-east-1:823301983257:sns-try'
+            TopicArn: `arn:aws:sns:us-east-1:${process.env.ACCOUNT_ID}:${process.env.SNS_TOPIC_NAME}`
         };
 
         // Create promise and SNS service object
@@ -29,12 +30,13 @@ const consumer = Consumer.create({
         // Handle promise's fulfilled/rejected states
         publishTextPromise.then(
             function (data) {
-                console.log(`Message ${params.Message} sent to the topic ${params.TopicArn}`);
-                console.log("MessageID is " + data.MessageId);
+                logger.info(`Message ${params.Message} sent to the topic ${params.TopicArn}`);
+                logger.info(`MessageID is ${data.MessageId}`);
             }).catch(
                 function (err) {
-                    console.error(err, err.stack);
-                });
+                    logger.error(err);
+                }
+            );
     },
     batchSize: 3,
     sqs: new AWS.SQS()

@@ -294,7 +294,7 @@ exports.get_all_bills_due = (req, res) => {
             // Setup the sendMessage parameter object   
             const params = {
                 MessageAttributes: {
-                    "User": {
+                    "email_address": {
                       DataType: "String",
                       StringValue: email_address
                     },
@@ -304,7 +304,7 @@ exports.get_all_bills_due = (req, res) => {
                     }
                   },
                 MessageBody: `The link for bills due in the next ${req.params.days} days`,
-                QueueUrl: `https://sqs.us-east-1.amazonaws.com/${process.env.ACCOUNT_ID}/csye6225-spring2020`
+                QueueUrl: `https://sqs.us-east-1.amazonaws.com/${process.env.ACCOUNT_ID}/${process.env.SQS_QUEUE_NAME}`
             };
             sqs.sendMessage(params, (err, data) => {
                 if (err) {

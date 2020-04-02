@@ -43,7 +43,6 @@ exports.post_bills = async (req, res) => {
             email_address: email_address
         }
     }).then((result) => {
-        // console.log(result['password']);
         if (result.length == 0) { // false if author already exists and was not created.
             statsd.timing("post bill api.timer", apiTimer);
             statsd.timing("post bill api.timer", queryTimer);
@@ -75,10 +74,10 @@ exports.post_bills = async (req, res) => {
             logger.info(`Post bill: bill ${result['id']} created`);
             res.status(201).send({ id: result['id'], created_ts: result['createdAt'], updated_ts: result['updatedAt'], owner_id: result['owner_id'], vendor: result['vendor'], bill_date: result['bill_date'], due_date: result['due_date'], amount_date: result['amount_due'], categories: result['categories'], paymentStatus: result['paymentStatus'], attachment: result['attachment'] })
         })
-            .catch(err => { console.log(err); return res.status(400).send({ message: 'Error creating bill' }) })
+            .catch(err => { logger.error(err); return res.status(400).send({ message: 'Error creating bill' }) })
 
 
-    }).catch(err => { console.log(err); return res.status(400).send({ message: 'Email does not exists' }) })
+    }).catch(err => { logger.error(err); return res.status(400).send({ message: 'Email does not exists' }) })
 
 };
 
@@ -104,7 +103,6 @@ exports.get_bills = (req, res) => {
             email_address: email_address
         }
     }).then((result) => {
-        // console.log(result['password']);
         if (result.length == 0) { // false if author already exists and was not created.
             statsd.timing("get bill by ID api.timer", apiTimer);
             statsd.timing("get bill by ID query.timer", queryTimer);
@@ -177,7 +175,6 @@ exports.get_all_bills = (req, res) => {
             email_address: email_address
         }
     }).then((user_result) => {
-        // console.log(result['password']);
         if (user_result.length == 0) { // false if author already exists and was not created.
             statsd.timing("get all bills api.timer", apiTimer);
             statsd.timing("get all bills query.timer", queryTimer);
@@ -213,7 +210,7 @@ exports.get_all_bills = (req, res) => {
             res.status(200).send(results);
 
         })
-            .catch(err => { console.log(err); return res.status(404).send({ message: 'Bill not found' }) })
+            .catch(err => { logger.error(err); return res.status(404).send({ message: 'Bill not found' }) })
     })
         .catch(err => { return res.status(400).send({ message: 'Email does not exists' }) })
 };
@@ -291,6 +288,12 @@ exports.get_all_bills_due = (req, res) => {
             statsd.timing("get all bills query.timer", queryTimer);
             logger.info('Get bills for a user success');
 
+            var links = "The links for bills - \n";
+            for(let i=0; i<results.length;i++){
+                let link = req.protocol + '://' + req.get('host') + '/v2/bill/' + results[i]['dataValues']['id'] + '\n';
+                links += link; 
+            }
+
             // Setup the sendMessage parameter object   
             const params = {
                 MessageAttributes: {
@@ -300,7 +303,7 @@ exports.get_all_bills_due = (req, res) => {
                     },
                     "Bills": {
                       DataType: "String",
-                      StringValue: req.protocol + '://' + req.get('host') + req.originalUrl
+                      StringValue: links
                     }
                   },
                 MessageBody: `The link for bills due in the next ${req.params.days} days`,
@@ -308,18 +311,18 @@ exports.get_all_bills_due = (req, res) => {
             };
             sqs.sendMessage(params, (err, data) => {
                 if (err) {
-                    console.log("Error", err);
+                    logger.error(err);
                 } else {
-                    console.log("Successfully added message", data.MessageId);
+                    logger.info(`Successfully added message ${data.MessageId}`)
                 }
             });
 
             res.status(200).send(results);
 
         })
-            .catch(err => { console.log(err); return res.status(404).send({ message: 'Bill not found' }) })
+            .catch(err => { logger.error(err); return res.status(404).send({ message: 'Bill not found' }) })
     })
-        .catch(err => { console.log(err); return res.status(400).send({ message: 'Email does not exists' }) })
+        .catch(err => { logger.error(err); return res.status(400).send({ message: 'Email does not exists' }) })
 };
 
 
@@ -353,7 +356,6 @@ exports.update_bill = (req, res) => {
             email_address: email_address
         }
     }).then((result) => {
-        // console.log(result['password']);
         if (result.length == 0) { // false if author already exists and was not created.
             statsd.timing("update bill api.timer", apiTimer);
             statsd.timing("update bill query.timer", queryTimer);
@@ -369,7 +371,6 @@ exports.update_bill = (req, res) => {
             return res.status(401).send({ message: 'Password not valid!' });
         }
         const user_id = result['id'];
-        console.log(user_id);
 
         Bill.findOne({
             where: {
@@ -451,7 +452,6 @@ exports.delete_bill = (req, res) => {
             email_address: email_address
         }
     }).then((result) => {
-        // console.log(result['password']);
         if (result.length == 0) { // false if author already exists and was not created.
             statsd.timing("delete bill api.timer", apiTimer);
             statsd.timing("delete bill query.timer", queryTimer);
@@ -467,7 +467,6 @@ exports.delete_bill = (req, res) => {
             return res.status(401).send({ message: 'Password not valid!' });
         }
         const user_id = result['id'];
-        console.log(user_id);
 
         Bill.findOne({
             where: {
@@ -489,7 +488,6 @@ exports.delete_bill = (req, res) => {
                 }
 
             }).then((result) => {
-                console.log(result)
                 if (result == 0) {
                     statsd.timing("delete bill api.timer", apiTimer);
                     statsd.timing("delete bill query.timer", queryTimer);
@@ -502,7 +500,7 @@ exports.delete_bill = (req, res) => {
                 logger.info('Delete bill successful');
                 return res.status(204).send()
             })
-                .catch(err => { console.log(err); return res.status(400).send({ message: 'Error deleting bill' }) })
+                .catch(err => { logger.error(err); return res.status(400).send({ message: 'Error deleting bill' }) })
         })
             .catch(err => { return res.status(404).send({ message: 'Bill not found' }) })
     })

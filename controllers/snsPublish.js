@@ -7,7 +7,6 @@ const consumer = Consumer.create({
     queueUrl: `https://sqs.us-east-1.amazonaws.com/${process.env.ACCOUNT_ID}/${process.env.SQS_QUEUE_NAME}`,
     messageAttributeNames: ['email_address', 'Bills'],
     handleMessage: async (message) => {
-        console.log(message);
         // Create publish parameters
         var params = {
             Message: message.Body + ' for user ' + message.MessageAttributes['email_address'].StringValue + '. Link to the bills ' + message.MessageAttributes['Bills'].StringValue, /* required */

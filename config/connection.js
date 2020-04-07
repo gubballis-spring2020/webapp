@@ -9,6 +9,7 @@ mysqlConnection =  new Sequelize(process.env.DB_NAME , process.env.DB_USER, proc
     host: process.env.DB_HOST,
     dialect: 'mysql',
     operatorsAliases: false,
+    ssl: 'Amazon RDS',
   
     pool: {
       max: 5,

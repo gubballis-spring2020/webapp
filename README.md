@@ -22,3 +22,5 @@
 4) To run circleci jobs locally, download the circleci binary brew install or sudo snap install and you can execute the below command
 
     ```circleci local execute --job pr_check``` .
+
+5) This application uses a SSL certificate which have to be acuired from where the domain is registered.

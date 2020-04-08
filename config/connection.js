@@ -1,6 +1,7 @@
 const mysql = require('mysql');
 const dbConfig = require('./db.config');
 const Sequelize = require('sequelize');
+const fs = require("fs");
 var envpath = process.env.HOME;
 
 require('dotenv').config({path : envpath + "/.env"});
